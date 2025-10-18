@@ -1,30 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { NextPage } from "next";
 import { encodePacked, keccak256, parseEther, toHex } from "viem";
 import { useAccount } from "wagmi";
 import {
     ArrowRightIcon,
     ArrowsRightLeftIcon,
-    CheckCircleIcon,
-    ExclamationTriangleIcon,
-    LockClosedIcon,
-    SparklesIcon,
+    ArrowTopRightOnSquareIcon,
     BoltIcon,
-    ShieldCheckIcon,
+    CheckCircleIcon,
     ClockIcon,
+    ExclamationTriangleIcon,
+    EyeIcon,
+    ShieldCheckIcon,
+    SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { AddressInput, EtherInput } from "~~/components/scaffold-eth";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { notification } from "~~/utils/scaffold-eth";
+import {
+    SwapTransaction,
+    addSwapTransaction,
+    createSwapTracking,
+    getExplorerUrl,
+    getStageInfo,
+    saveTrackedSwap,
+} from "~~/utils/swapTracking";
 
 type SwapDirection = "ETH_TO_DOT" | "DOT_TO_ETH";
 
 // Fixed exchange rate: 1 ETH = 100,000 DOT
 const FIXED_EXCHANGE_RATE = 100000;
 
-// Resolver address (this should match the address in resolver-service.ts)
+// Resolver address
 const RESOLVER_ADDRESS = process.env.NEXT_PUBLIC_RESOLVER_ADDRESS || "0x0000000000000000000000000000000000000000";
 
 // Resolver status
@@ -35,17 +45,9 @@ interface ResolverStatus {
 }
 
 /**
- * Simplified Swap Page - Works with Resolver Service
- * 
- * Users only need to:
- * 1. Choose direction (ETH->DOT or DOT->ETH)
- * 2. Enter destination address
- * 3. Enter amount
- * 4. Click swap
- * 
- * The resolver service automatically fulfills the swap!
+ * Fast Swap Page - With Complete Transaction Tracking
  */
-const SimpleSwapPage: NextPage = () => {
+const FastSwapPage: NextPage = () => {
     const { address: connectedAddress, isConnected } = useAccount();
 
     // Form state
@@ -54,11 +56,16 @@ const SimpleSwapPage: NextPage = () => {
     const [sendAmount, setSendAmount] = useState<string>("");
     const [receiveAmount, setReceiveAmount] = useState<string>("");
 
-    // Transaction state
+    // Swap state
     const [isCreating, setIsCreating] = useState(false);
     const [swapCreated, setSwapCreated] = useState(false);
     const [swapId, setSwapId] = useState<string>("");
+    const [secret, setSecret] = useState<string>("");
     const [secretHash, setSecretHash] = useState<string>("");
+
+    // Transaction tracking
+    const [transactions, setTransactions] = useState<SwapTransaction[]>([]);
+    const [currentStage, setCurrentStage] = useState<string>("INITIATED");
 
     // Resolver status
     const [resolverStatus, setResolverStatus] = useState<ResolverStatus | null>(null);
@@ -84,7 +91,7 @@ const SimpleSwapPage: NextPage = () => {
         functionName: "MAX_TIMELOCK",
     });
 
-    // Fetch resolver status on mount
+    // Fetch resolver status
     useEffect(() => {
         const fetchResolverStatus = async () => {
             try {
@@ -120,7 +127,6 @@ const SimpleSwapPage: NextPage = () => {
     // Auto-calculate receive amount
     useEffect(() => {
         const send = parseFloat(sendAmount);
-
         if (send > 0) {
             if (direction === "ETH_TO_DOT") {
                 setReceiveAmount((send * FIXED_EXCHANGE_RATE).toFixed(4));
@@ -133,7 +139,7 @@ const SimpleSwapPage: NextPage = () => {
     }, [sendAmount, direction]);
 
     /**
-     * Convert address to bytes32 (pad with zeros)
+     * Convert address to bytes32
      */
     const addressToBytes32 = (address: string): `0x${string}` => {
         if (!address || address === "0x") {
@@ -143,7 +149,7 @@ const SimpleSwapPage: NextPage = () => {
     };
 
     /**
-     * Generate cryptographically secure random secret
+     * Generate secret
      */
     const generateSecret = () => {
         const randomBytes = new Uint8Array(32);
@@ -153,22 +159,30 @@ const SimpleSwapPage: NextPage = () => {
             .join("")}`;
 
         const hash = keccak256(encodePacked(["bytes32"], [secretHex as `0x${string}`]));
-
         return { secret: secretHex, secretHash: hash };
     };
 
     /**
-     * Toggle swap direction
+     * Toggle direction
      */
     const toggleDirection = () => {
         setDirection(direction === "ETH_TO_DOT" ? "DOT_TO_ETH" : "ETH_TO_DOT");
     };
 
     /**
-     * Create the swap
+     * Add transaction to tracking
+     */
+    const addTransaction = (tx: Omit<SwapTransaction, "timestamp">) => {
+        const fullTx: SwapTransaction = { ...tx, timestamp: Date.now() };
+        setTransactions(prev => [...prev, fullTx]);
+        setCurrentStage(tx.stage);
+    };
+
+    /**
+     * Create swap
      */
     const createSwap = async () => {
-        if (!isConnected) {
+        if (!isConnected || !connectedAddress) {
             notification.error("Please connect your wallet");
             return;
         }
@@ -190,43 +204,73 @@ const SimpleSwapPage: NextPage = () => {
         }
 
         // Generate secret and swap ID
-        const { secret, secretHash } = generateSecret();
+        const { secret: generatedSecret, secretHash: generatedHash } = generateSecret();
         const timestamp = Date.now();
         const id = keccak256(toHex(`swap_${connectedAddress}_${timestamp}`));
 
-        setSecretHash(secretHash);
+        setSecret(generatedSecret);
+        setSecretHash(generatedHash);
         setSwapId(id);
         setIsCreating(true);
+
+        // Create swap tracking data
+        const swapTracking = createSwapTracking({
+            swapId: id,
+            secretHash: generatedHash,
+            secret: generatedSecret,
+            direction,
+            userAddress: connectedAddress,
+            destinationAddress,
+            sendAmount,
+            receiveAmount,
+            role: "MAKER",
+            resolverAddress: RESOLVER_ADDRESS,
+        });
 
         try {
             if (direction === "ETH_TO_DOT") {
                 // User sends ETH, receives DOT
-                // Step 1: Create swap on Ethereum
                 const timelockSeconds = ethMinTimelock ? Number(ethMinTimelock) : 12 * 3600;
 
-                await writeEthereumEscrow({
+                notification.info("📝 Step 1/3: Creating swap on Ethereum...");
+
+                const ethTxHash = await writeEthereumEscrow({
                     functionName: "createSwap",
                     args: [
                         id as `0x${string}`,
-                        secretHash as `0x${string}`,
-                        RESOLVER_ADDRESS as `0x${string}`, // Resolver is the taker
+                        generatedHash as `0x${string}`,
+                        RESOLVER_ADDRESS as `0x${string}`,
                         parseEther(sendAmount),
                         parseEther(receiveAmount),
                         BigInt(FIXED_EXCHANGE_RATE * 1e18),
                         BigInt(timelockSeconds),
-                        addressToBytes32(destinationAddress), // User's destination DOT address
+                        addressToBytes32(destinationAddress),
                     ],
                     value: parseEther(sendAmount),
                 });
 
-                // Step 2: Call resolver API to fulfill with DOT
+                const ethTx: SwapTransaction = {
+                    txHash: ethTxHash || "",
+                    chain: "ethereum",
+                    stage: "INITIATED",
+                    timestamp: Date.now(),
+                    explorerUrl: getExplorerUrl("ethereum", ethTxHash || ""),
+                };
+                addTransaction(ethTx);
+                addSwapTransaction(id, ethTx);
+
+                notification.success("✅ Step 1/3: Swap created on Ethereum!");
+
+                // Call resolver API
+                notification.info("🔄 Step 2/3: Waiting for resolver to match...");
+
                 try {
                     const response = await fetch("http://localhost:3001/fulfill-eth-to-dot", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             swapId: id,
-                            secretHash,
+                            secretHash: generatedHash,
                             maker: connectedAddress,
                             ethAmount: sendAmount,
                             dotAmount: receiveAmount,
@@ -234,55 +278,101 @@ const SimpleSwapPage: NextPage = () => {
                     });
 
                     if (response.ok) {
-                        notification.success("✅ Swap created and fulfilled by resolver!");
+                        const data = await response.json();
+                        const dotTx: SwapTransaction = {
+                            txHash: data.txHash,
+                            chain: "polkadot",
+                            stage: "RESOLVER_MATCHED",
+                            timestamp: Date.now(),
+                            explorerUrl: getExplorerUrl("polkadot", data.txHash),
+                        };
+                        addTransaction(dotTx);
+                        addSwapTransaction(id, dotTx);
+
+                        notification.success("✅ Step 2/3: Resolver matched on Polkadot!");
+                        notification.info(
+                            "🎯 Step 3/3: You can now claim your DOT! Go to Swap Details to complete the swap.",
+                            { duration: 10000 },
+                        );
                     } else {
-                        notification.warning("⚠️ Swap created but resolver fulfillment pending...");
+                        notification.warning("⚠️ Resolver didn't respond. Please check My Swaps later.");
                     }
                 } catch (apiError) {
                     console.error("Resolver API error:", apiError);
-                    notification.warning("⚠️ Swap created but resolver may be offline");
+                    notification.warning("⚠️ Resolver may be offline. Check My Swaps for updates.");
                 }
-
             } else {
                 // User sends DOT, receives ETH
-                // Step 1: Create swap on Polkadot
                 const timelockSeconds = dotMaxTimelock ? Number(dotMaxTimelock) : 6 * 3600;
 
-                await writePolkadotEscrow({
+                notification.info("📝 Step 1/3: Creating swap on Polkadot...");
+
+                const dotTxHash = await writePolkadotEscrow({
                     functionName: "createNativeSwap",
                     args: [
                         id as `0x${string}`,
-                        secretHash as `0x${string}`,
-                        destinationAddress as `0x${string}`, // User's destination ETH address  
+                        generatedHash as `0x${string}`,
+                        destinationAddress as `0x${string}`,
                         BigInt(timelockSeconds),
                     ],
                     value: parseEther(sendAmount),
                 });
 
-                // Step 2: Call resolver API to fulfill with ETH
+                const dotTx: SwapTransaction = {
+                    txHash: dotTxHash || "",
+                    chain: "polkadot",
+                    stage: "INITIATED",
+                    timestamp: Date.now(),
+                    explorerUrl: getExplorerUrl("polkadot", dotTxHash || ""),
+                };
+                addTransaction(dotTx);
+                addSwapTransaction(id, dotTx);
+
+                notification.success("✅ Step 1/3: Swap created on Polkadot!");
+
+                // Call resolver API
+                notification.info("🔄 Step 2/3: Waiting for resolver to match...");
+
                 try {
                     const response = await fetch("http://localhost:3001/fulfill-dot-to-eth", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             swapId: id,
-                            secretHash,
+                            secretHash: generatedHash,
                             taker: connectedAddress,
                             dotAmount: sendAmount,
                         }),
                     });
 
                     if (response.ok) {
-                        notification.success("✅ Swap created and fulfilled by resolver!");
+                        const data = await response.json();
+                        const ethTx: SwapTransaction = {
+                            txHash: data.txHash,
+                            chain: "ethereum",
+                            stage: "RESOLVER_MATCHED",
+                            timestamp: Date.now(),
+                            explorerUrl: getExplorerUrl("ethereum", data.txHash),
+                        };
+                        addTransaction(ethTx);
+                        addSwapTransaction(id, ethTx);
+
+                        notification.success("✅ Step 2/3: Resolver matched on Ethereum!");
+                        notification.info(
+                            "🎯 Step 3/3: You can now claim your ETH! Go to Swap Details to complete the swap.",
+                            { duration: 10000 },
+                        );
                     } else {
-                        notification.warning("⚠️ Swap created but resolver fulfillment pending...");
+                        notification.warning("⚠️ Resolver didn't respond. Please check My Swaps later.");
                     }
                 } catch (apiError) {
                     console.error("Resolver API error:", apiError);
-                    notification.warning("⚠️ Swap created but resolver may be offline");
+                    notification.warning("⚠️ Resolver may be offline. Check My Swaps for updates.");
                 }
             }
 
+            // Save to tracking
+            saveTrackedSwap(swapTracking);
             setSwapCreated(true);
         } catch (error: any) {
             console.error("Error creating swap:", error);
@@ -301,7 +391,10 @@ const SimpleSwapPage: NextPage = () => {
         setReceiveAmount("");
         setSwapCreated(false);
         setSwapId("");
+        setSecret("");
         setSecretHash("");
+        setTransactions([]);
+        setCurrentStage("INITIATED");
     };
 
     if (!isConnected) {
@@ -328,13 +421,15 @@ const SimpleSwapPage: NextPage = () => {
                             <BoltIcon className="w-10 h-10 text-primary" />
                         </div>
                         <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            Instant Swap
+                            Fast Swap
                         </h1>
                     </div>
-                    <p className="text-xl opacity-80 mb-4">Lightning-fast cross-chain swaps</p>
+                    <p className="text-xl opacity-80 mb-4">Lightning-fast cross-chain swaps with full tracking</p>
                     <div className="flex items-center justify-center gap-2 flex-wrap">
                         <div className={`badge badge-lg ${resolverStatus?.online ? "badge-success" : "badge-warning"}`}>
-                            <div className={`w-2 h-2 rounded-full mr-2 ${resolverStatus?.online ? "bg-green-400 animate-pulse" : "bg-yellow-400"}`}></div>
+                            <div
+                                className={`w-2 h-2 rounded-full mr-2 ${resolverStatus?.online ? "bg-green-400 animate-pulse" : "bg-yellow-400"}`}
+                            ></div>
                             {loadingStatus ? "Checking..." : resolverStatus?.online ? "Resolver Online" : "Resolver Offline"}
                         </div>
                         <div className="badge badge-lg badge-ghost">
@@ -358,7 +453,6 @@ const SimpleSwapPage: NextPage = () => {
                                     <h3 className="font-bold">Resolver Service Offline</h3>
                                     <p className="text-sm">
                                         The automatic resolver service is not running. Your swap will not be automatically fulfilled.
-                                        Please check the documentation to start the resolver service.
                                     </p>
                                 </div>
                             </div>
@@ -377,8 +471,8 @@ const SimpleSwapPage: NextPage = () => {
                                             <h4 className="font-bold text-lg">Fixed Exchange Rate</h4>
                                             <p className="text-sm opacity-90">
                                                 1 ETH = {(resolverStatus?.exchangeRate || FIXED_EXCHANGE_RATE).toLocaleString()} DOT
-                                                <span className="mx-2">•</span>
-                                                1 DOT = {(1 / (resolverStatus?.exchangeRate || FIXED_EXCHANGE_RATE)).toFixed(8)} ETH
+                                                <span className="mx-2">•</span>1 DOT ={" "}
+                                                {(1 / (resolverStatus?.exchangeRate || FIXED_EXCHANGE_RATE)).toFixed(8)} ETH
                                             </p>
                                         </div>
                                     </div>
@@ -412,20 +506,13 @@ const SimpleSwapPage: NextPage = () => {
                                 <div className="form-control mb-6">
                                     <label className="label">
                                         <span className="label-text font-bold text-lg flex items-center gap-2">
-                                            <span className="badge badge-sm badge-primary">{direction === "ETH_TO_DOT" ? "ETH" : "DOT"}</span>
+                                            <span className="badge badge-sm badge-primary">
+                                                {direction === "ETH_TO_DOT" ? "ETH" : "DOT"}
+                                            </span>
                                             Amount to Send
                                         </span>
-                                        <span className="label-text-alt opacity-60">
-                                            Min: {direction === "ETH_TO_DOT" ? "0.00001 ETH" : "1 DOT"}
-                                        </span>
                                     </label>
-                                    <div className="relative">
-                                        <EtherInput
-                                            value={sendAmount}
-                                            onChange={value => setSendAmount(value)}
-                                            placeholder="0.0"
-                                        />
-                                    </div>
+                                    <EtherInput value={sendAmount} onChange={value => setSendAmount(value)} placeholder="0.0" />
                                 </div>
 
                                 {/* Receive Amount Display */}
@@ -445,9 +532,6 @@ const SimpleSwapPage: NextPage = () => {
                                                 <ArrowRightIcon className="w-6 h-6 text-success" />
                                             </div>
                                         </div>
-                                        <div className="mt-3 text-xs opacity-60">
-                                            Rate: 1 {direction === "ETH_TO_DOT" ? "ETH" : "DOT"} = {direction === "ETH_TO_DOT" ? FIXED_EXCHANGE_RATE.toLocaleString() : (1 / FIXED_EXCHANGE_RATE).toFixed(8)} {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}
-                                        </div>
                                     </div>
                                 )}
 
@@ -455,51 +539,19 @@ const SimpleSwapPage: NextPage = () => {
                                 <div className="form-control mb-8">
                                     <label className="label">
                                         <span className="label-text font-bold text-lg flex items-center gap-2">
-                                            <span className="badge badge-sm badge-secondary">{direction === "ETH_TO_DOT" ? "DOT" : "ETH"}</span>
+                                            <span className="badge badge-sm badge-secondary">
+                                                {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}
+                                            </span>
                                             Destination Address
                                         </span>
                                     </label>
                                     <AddressInput
                                         value={destinationAddress}
                                         onChange={value => setDestinationAddress(value)}
-                                        placeholder={direction === "ETH_TO_DOT" ? "Your DOT address (0x...)" : "Your ETH address (0x...)"}
+                                        placeholder={
+                                            direction === "ETH_TO_DOT" ? "Your DOT address (0x...)" : "Your ETH address (0x...)"
+                                        }
                                     />
-                                    <label className="label">
-                                        <span className="label-text-alt opacity-70 flex items-center gap-1">
-                                            <CheckCircleIcon className="w-3 h-3" />
-                                            {direction === "ETH_TO_DOT" ? "DOT" : "ETH"} will be sent here automatically
-                                        </span>
-                                    </label>
-                                </div>
-
-                                {/* How it Works */}
-                                <div className="alert border-2 border-info/30 bg-info/10 mb-6">
-                                    <div className="w-full">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <div className="p-2 bg-info/20 rounded-full">
-                                                <BoltIcon className="w-5 h-5 text-info" />
-                                            </div>
-                                            <h4 className="font-bold text-lg">How It Works</h4>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="flex items-start gap-3">
-                                                <div className="badge badge-sm badge-info mt-1">1</div>
-                                                <p className="text-sm flex-1">You lock {direction === "ETH_TO_DOT" ? "ETH" : "DOT"} in the smart contract</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <div className="badge badge-sm badge-info mt-1">2</div>
-                                                <p className="text-sm flex-1">Resolver detects your swap and locks matching {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <div className="badge badge-sm badge-info mt-1">3</div>
-                                                <p className="text-sm flex-1">Atomic swap completes automatically (~2 minutes)</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <div className="badge badge-sm badge-success mt-1">✓</div>
-                                                <p className="text-sm flex-1 font-semibold text-success">You receive {direction === "ETH_TO_DOT" ? "DOT" : "ETH"} at your address!</p>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* Create Button */}
@@ -526,187 +578,136 @@ const SimpleSwapPage: NextPage = () => {
                                     ) : (
                                         <span className="flex items-center gap-2 text-lg font-bold">
                                             <BoltIcon className="w-6 h-6" />
-                                            Instant Swap {direction === "ETH_TO_DOT" ? "ETH → DOT" : "DOT → ETH"}
+                                            Fast Swap {direction === "ETH_TO_DOT" ? "ETH → DOT" : "DOT → ETH"}
                                         </span>
                                     )}
                                 </button>
-
-                                {!resolverStatus?.online && (
-                                    <div className="text-center text-sm opacity-60 mt-2">
-                                        Resolver service must be running for automatic swaps
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Info Cards */}
-                        <div className="grid md:grid-cols-3 gap-4">
-                            <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                                <div className="card-body p-6">
-                                    <BoltIcon className="w-8 h-8 text-primary mb-2" />
-                                    <h3 className="font-bold text-lg">Lightning Fast</h3>
-                                    <p className="text-sm opacity-70">Automatic fulfillment in ~2 minutes</p>
-                                </div>
-                            </div>
-                            <div className="card bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
-                                <div className="card-body p-6">
-                                    <ShieldCheckIcon className="w-8 h-8 text-success mb-2" />
-                                    <h3 className="font-bold text-lg">100% Secure</h3>
-                                    <p className="text-sm opacity-70">Trustless atomic swaps with HTLC</p>
-                                </div>
-                            </div>
-                            <div className="card bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/20">
-                                <div className="card-body p-6">
-                                    <CheckCircleIcon className="w-8 h-8 text-secondary mb-2" />
-                                    <h3 className="font-bold text-lg">No Fees</h3>
-                                    <p className="text-sm opacity-70">Only pay network gas fees</p>
-                                </div>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    /* Success State */
-                    <div className="card bg-base-200 shadow-2xl border-2 border-success/30">
-                        <div className="card-body text-center p-10">
-                            <div className="mx-auto mb-6 p-4 bg-success/20 rounded-full w-fit">
-                                <CheckCircleIcon className="w-20 h-20 text-success animate-pulse" />
-                            </div>
-                            <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-success to-success/70 bg-clip-text text-transparent">
-                                Swap Created Successfully!
-                            </h2>
-                            <p className="text-lg opacity-80 mb-6">
-                                Your swap is being processed automatically. You&apos;ll receive your funds in ~2 minutes!
-                            </p>
-
-                            {/* Progress indicator */}
-                            <div className="mb-6">
-                                <div className="flex justify-center items-center gap-2 mb-2">
-                                    <span className="loading loading-spinner loading-sm text-success"></span>
-                                    <span className="text-sm font-semibold text-success">Processing...</span>
+                    /* Success State with Transaction Tracking */
+                    <div className="space-y-6">
+                        <div className="card bg-base-200 shadow-2xl border-2 border-success/30">
+                            <div className="card-body p-10">
+                                <div className="mx-auto mb-6 p-4 bg-success/20 rounded-full w-fit">
+                                    <CheckCircleIcon className="w-20 h-20 text-success animate-pulse" />
                                 </div>
-                                <progress className="progress progress-success w-full"></progress>
-                            </div>
+                                <h2 className="text-3xl font-bold mb-2 text-center bg-gradient-to-r from-success to-success/70 bg-clip-text text-transparent">
+                                    Swap Initiated Successfully!
+                                </h2>
+                                <p className="text-lg opacity-80 mb-6 text-center">
+                                    Your swap is being processed. Track all transactions below.
+                                </p>
 
-                            <div className="grid md:grid-cols-2 gap-4 mb-6">
-                                <div className="card bg-base-300 border border-base-content/10">
-                                    <div className="card-body p-6">
-                                        <div className="text-sm opacity-60 mb-1">You Sent</div>
-                                        <div className="text-3xl font-bold flex items-baseline gap-2">
-                                            {sendAmount}
-                                            <span className="badge badge-primary badge-lg">{direction === "ETH_TO_DOT" ? "ETH" : "DOT"}</span>
+                                {/* Transaction Tracking */}
+                                <div className="card bg-base-300 mb-6">
+                                    <div className="card-body">
+                                        <h3 className="card-title mb-4">Transaction Stages</h3>
+                                        {transactions.length === 0 ? (
+                                            <div className="text-center py-4 opacity-70">
+                                                <ClockIcon className="w-8 h-8 mx-auto mb-2" />
+                                                <p>Waiting for transactions...</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {transactions.map((tx, index) => {
+                                                    const stageInfo = getStageInfo(tx.stage);
+                                                    return (
+                                                        <div key={index} className="flex items-center gap-4 p-4 bg-base-200 rounded-lg">
+                                                            <span className="text-3xl">{stageInfo.icon}</span>
+                                                            <div className="flex-1">
+                                                                <div className="font-bold">{stageInfo.label}</div>
+                                                                <div className="text-sm opacity-70">{stageInfo.description}</div>
+                                                                <div className="flex items-center gap-2 mt-2">
+                                                                    <div className="badge badge-sm badge-outline">{tx.chain}</div>
+                                                                    <div className="font-mono text-xs opacity-70">
+                                                                        {tx.txHash.slice(0, 10)}...{tx.txHash.slice(-8)}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <a
+                                                                href={tx.explorerUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="btn btn-sm btn-ghost"
+                                                            >
+                                                                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                                                            </a>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Swap Details */}
+                                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                    <div className="card bg-base-300">
+                                        <div className="card-body p-4">
+                                            <div className="text-sm opacity-60 mb-1">You Sent</div>
+                                            <div className="text-2xl font-bold flex items-baseline gap-2">
+                                                {sendAmount}
+                                                <span className="badge badge-primary">{direction === "ETH_TO_DOT" ? "ETH" : "DOT"}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="card bg-gradient-to-br from-success/20 to-success/10 border border-success/30">
+                                        <div className="card-body p-4">
+                                            <div className="text-sm opacity-60 mb-1">You Will Receive</div>
+                                            <div className="text-2xl font-bold text-success flex items-baseline gap-2">
+                                                {receiveAmount}
+                                                <span className="badge badge-success">{direction === "ETH_TO_DOT" ? "DOT" : "ETH"}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="card bg-gradient-to-br from-success/20 to-success/10 border border-success/30">
-                                    <div className="card-body p-6">
-                                        <div className="text-sm opacity-60 mb-1">You Will Receive</div>
-                                        <div className="text-3xl font-bold text-success flex items-baseline gap-2">
-                                            {receiveAmount}
-                                            <span className="badge badge-success badge-lg">{direction === "ETH_TO_DOT" ? "DOT" : "ETH"}</span>
+
+                                {/* Next Steps */}
+                                <div className="alert alert-info mb-6">
+                                    <div>
+                                        <h4 className="font-bold">📌 Next Steps:</h4>
+                                        <ol className="list-decimal list-inside text-sm space-y-1 mt-2">
+                                            <li>Wait for resolver to match your swap (~30 seconds)</li>
+                                            <li>Go to Swap Details to claim your funds</li>
+                                            <li>Use your secret to complete the swap</li>
+                                        </ol>
+                                    </div>
+                                </div>
+
+                                {/* Important: Secret */}
+                                {secret && (
+                                    <div className="alert alert-warning mb-6">
+                                        <div className="w-full">
+                                            <h4 className="font-bold mb-2">🔑 Your Secret (SAVE THIS!):</h4>
+                                            <div className="font-mono text-xs bg-base-300 p-3 rounded break-all mb-2">{secret}</div>
+                                            <p className="text-sm">
+                                                You'll need this secret to claim your {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}. Keep it
+                                                safe!
+                                            </p>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            <div className="card bg-base-300 border border-base-content/10 mb-6">
-                                <div className="card-body p-4">
-                                    <div className="text-sm opacity-60 mb-1">Destination Address</div>
-                                    <div className="font-mono text-xs break-all">{destinationAddress}</div>
+                                {/* Actions */}
+                                <div className="flex gap-4 justify-center flex-wrap">
+                                    <Link href={`/swap-details/${swapId}`} className="btn btn-primary btn-lg shadow-xl">
+                                        <EyeIcon className="w-5 h-5" />
+                                        View Swap Details
+                                    </Link>
+                                    <button className="btn btn-outline btn-lg" onClick={resetForm}>
+                                        <SparklesIcon className="w-5 h-5" />
+                                        Create Another Swap
+                                    </button>
                                 </div>
-                            </div>
-
-                            <details className="collapse collapse-arrow bg-base-300 mb-6">
-                                <summary className="collapse-title text-sm font-semibold">
-                                    Technical Details
-                                </summary>
-                                <div className="collapse-content text-xs font-mono space-y-2">
-                                    <div>
-                                        <div className="opacity-60 mb-1">Swap ID:</div>
-                                        <div className="break-all">{swapId}</div>
-                                    </div>
-                                    <div>
-                                        <div className="opacity-60 mb-1">Secret Hash:</div>
-                                        <div className="break-all">{secretHash}</div>
-                                    </div>
-                                </div>
-                            </details>
-
-                            <div className="flex gap-4 justify-center flex-wrap">
-                                <button
-                                    className="btn btn-primary btn-lg shadow-xl"
-                                    onClick={resetForm}
-                                >
-                                    <SparklesIcon className="w-5 h-5" />
-                                    Create Another Swap
-                                </button>
-                                <a
-                                    href="/swaps"
-                                    className="btn btn-outline btn-lg"
-                                >
-                                    <ArrowRightIcon className="w-5 h-5" />
-                                    View My Swaps
-                                </a>
                             </div>
                         </div>
                     </div>
                 )}
-
-                {/* Resolver Info */}
-                <div className="card bg-gradient-to-r from-base-300 to-base-200 shadow-xl border border-base-content/10 mt-6">
-                    <div className="card-body p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-primary/10 rounded-full">
-                                <BoltIcon className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg">Resolver Service</h3>
-                                <p className="text-sm opacity-70">
-                                    Automated liquidity provider for instant swaps
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <div className="text-xs opacity-60 mb-1">Status</div>
-                                <div className={`badge ${resolverStatus?.online ? "badge-success" : "badge-warning"}`}>
-                                    {resolverStatus?.online ? "Online & Ready" : "Offline"}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-xs opacity-60 mb-1">Exchange Rate</div>
-                                <div className="font-semibold">
-                                    1 ETH = {(resolverStatus?.exchangeRate || FIXED_EXCHANGE_RATE).toLocaleString()} DOT
-                                </div>
-                            </div>
-                        </div>
-
-                        <details className="collapse collapse-arrow bg-base-200 mt-4">
-                            <summary className="collapse-title text-sm font-semibold">
-                                Resolver Details
-                            </summary>
-                            <div className="collapse-content">
-                                <div className="text-xs font-mono break-all">
-                                    {resolverStatus?.resolverAddress || RESOLVER_ADDRESS}
-                                </div>
-                                {(RESOLVER_ADDRESS === "0x0000000000000000000000000000000000000000" || !resolverStatus?.online) && (
-                                    <div className="alert alert-warning alert-sm mt-3">
-                                        <ExclamationTriangleIcon className="w-4 h-4" />
-                                        <div className="text-xs">
-                                            {RESOLVER_ADDRESS === "0x0000000000000000000000000000000000000000"
-                                                ? "Resolver not configured. Set NEXT_PUBLIC_RESOLVER_ADDRESS in .env.local"
-                                                : "Resolver service is not running. Start it with: yarn resolver-service"}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </details>
-                    </div>
-                </div>
             </div>
         </div>
     );
 };
 
-export default SimpleSwapPage;
-
+export default FastSwapPage;

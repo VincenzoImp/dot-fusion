@@ -6,20 +6,69 @@ import { useAccount } from "wagmi";
 import {
   ArrowRightIcon,
   BoltIcon,
+  ChartBarIcon,
   ClockIcon,
   CurrencyDollarIcon,
+  EyeIcon,
   GlobeAltIcon,
+  PlusCircleIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
+import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth";
 
 const HomePage: NextPage = () => {
-  const { isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useAccount();
+
+  // Fetch swap statistics
+  const { data: ethSwapCreatedEvents } = useScaffoldEventHistory({
+    contractName: "DotFusionEthereumEscrow",
+    eventName: "SwapCreated",
+    fromBlock: 0n,
+    watch: true,
+    filters: {},
+  });
+
+  const { data: dotSwapCreatedEvents } = useScaffoldEventHistory({
+    contractName: "DotFusionPolkadotEscrow",
+    eventName: "SwapCreated",
+    fromBlock: 0n,
+    watch: true,
+    filters: {},
+  });
+
+  const { data: ethSwapCompletedEvents } = useScaffoldEventHistory({
+    contractName: "DotFusionEthereumEscrow",
+    eventName: "SwapCompleted",
+    fromBlock: 0n,
+    watch: true,
+    filters: {},
+  });
+
+  const { data: dotSwapCompletedEvents } = useScaffoldEventHistory({
+    contractName: "DotFusionPolkadotEscrow",
+    eventName: "SwapCompleted",
+    fromBlock: 0n,
+    watch: true,
+    filters: {},
+  });
+
+  // Calculate statistics
+  const totalSwaps = (ethSwapCreatedEvents?.length || 0) + (dotSwapCreatedEvents?.length || 0);
+  const completedSwaps = (ethSwapCompletedEvents?.length || 0) + (dotSwapCompletedEvents?.length || 0);
+  const userSwaps =
+    totalSwaps > 0 && connectedAddress
+      ? [...(ethSwapCreatedEvents || []), ...(dotSwapCreatedEvents || [])].filter(
+        (event: any) =>
+          event.args.maker.toLowerCase() === connectedAddress.toLowerCase() ||
+          event.args.taker.toLowerCase() === connectedAddress.toLowerCase(),
+      ).length
+      : 0;
 
   return (
     <div className="min-h-screen bg-base-100">
       {/* Hero Section */}
-      <div className="hero min-h-[60vh] bg-gradient-to-br from-primary/10 to-secondary/10">
+      <div className="hero min-h-[50vh] bg-gradient-to-br from-primary/10 to-secondary/10">
         <div className="hero-content text-center">
           <div className="max-w-4xl">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -36,13 +85,13 @@ const HomePage: NextPage = () => {
                 <>
                   <Link href="/swap-simple" className="btn btn-primary btn-lg">
                     <BoltIcon className="w-6 h-6" />
-                    Instant Swap
+                    Fast Swap
                   </Link>
                   <Link href="/swap" className="btn btn-outline btn-lg">
                     Advanced Swap
                   </Link>
                   <Link href="/swaps" className="btn btn-outline btn-lg">
-                    <ClockIcon className="w-6 h-6" />
+                    <EyeIcon className="w-6 h-6" />
                     My Swaps
                   </Link>
                 </>
@@ -57,8 +106,45 @@ const HomePage: NextPage = () => {
         </div>
       </div>
 
+      {/* Statistics Cards - Only show when connected */}
+      {isConnected && (
+        <div className="py-8 px-4 bg-base-200">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-6">Platform Statistics</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <ChartBarIcon className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <h3 className="card-title justify-center">Total Swaps</h3>
+                  <div className="text-3xl font-bold">{totalSwaps}</div>
+                  <p className="opacity-70">All time</p>
+                </div>
+              </div>
+
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <EyeIcon className="w-12 h-12 text-success mx-auto mb-4" />
+                  <h3 className="card-title justify-center">Completed</h3>
+                  <div className="text-3xl font-bold">{completedSwaps}</div>
+                  <p className="opacity-70">Successful swaps</p>
+                </div>
+              </div>
+
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <PlusCircleIcon className="w-12 h-12 text-secondary mx-auto mb-4" />
+                  <h3 className="card-title justify-center">Your Swaps</h3>
+                  <div className="text-3xl font-bold">{userSwaps}</div>
+                  <p className="opacity-70">Created or participated</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Features Section */}
-      <div className="py-20 px-4">
+      <div className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Why Choose DotFusion?</h2>
 
@@ -81,7 +167,7 @@ const HomePage: NextPage = () => {
                 <BoltIcon className="w-12 h-12 text-secondary mx-auto mb-4" />
                 <h3 className="card-title justify-center">Fast & Efficient</h3>
                 <p className="opacity-70">
-                  Optimized smart contracts with automatic XCM bridge integration. Complete swaps in minutes, not hours.
+                  Optimized smart contracts with automatic resolver service. Complete swaps in minutes, not hours.
                 </p>
               </div>
             </div>
@@ -131,7 +217,7 @@ const HomePage: NextPage = () => {
       </div>
 
       {/* How It Works Section */}
-      <div className="py-20 px-4 bg-base-200">
+      <div className="py-16 px-4 bg-base-200">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
 
@@ -141,8 +227,8 @@ const HomePage: NextPage = () => {
               <div className="w-16 h-16 bg-primary text-primary-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold mb-2">Create Swap</h3>
-              <p className="opacity-70">Generate a secret and create a swap on Ethereum, locking your ETH.</p>
+              <h3 className="text-xl font-semibold mb-2">Lock Funds</h3>
+              <p className="opacity-70">Lock your ETH or DOT in a secure smart contract escrow.</p>
             </div>
 
             {/* Step 2 */}
@@ -150,9 +236,9 @@ const HomePage: NextPage = () => {
               <div className="w-16 h-16 bg-secondary text-secondary-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold mb-2">Counter Party</h3>
+              <h3 className="text-xl font-semibold mb-2">Auto Match</h3>
               <p className="opacity-70">
-                Another user sees your swap and locks DOT on Polkadot with the same secret hash.
+                Resolver service automatically matches and locks corresponding funds on the other chain.
               </p>
             </div>
 
@@ -161,9 +247,9 @@ const HomePage: NextPage = () => {
               <div className="w-16 h-16 bg-accent text-accent-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold mb-2">Reveal Secret</h3>
+              <h3 className="text-xl font-semibold mb-2">Atomic Swap</h3>
               <p className="opacity-70">
-                Claim your DOT by revealing the secret, which is automatically sent to Ethereum.
+                Cryptographic secrets ensure both parties receive funds or get refunded.
               </p>
             </div>
 
@@ -172,15 +258,15 @@ const HomePage: NextPage = () => {
               <div className="w-16 h-16 bg-success text-success-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 4
               </div>
-              <h3 className="text-xl font-semibold mb-2">Complete</h3>
-              <p className="opacity-70">The counter party claims their ETH using the revealed secret. Swap complete!</p>
+              <h3 className="text-xl font-semibold mb-2">Receive Funds</h3>
+              <p className="opacity-70">Receive your swapped tokens directly to your wallet. Swap complete!</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className="py-20 px-4">
+      <div className="py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Start Swapping?</h2>
           <p className="text-lg opacity-70 mb-8">

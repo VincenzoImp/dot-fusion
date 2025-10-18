@@ -21,13 +21,9 @@ export const menuLinks: HeaderMenuLink[] = [
     href: "/",
   },
   {
-    label: "Instant Swap",
+    label: "Fast Swap",
     href: "/swap-simple",
     icon: <BoltIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Dashboard",
-    href: "/dashboard",
   },
   {
     label: "Advanced Swap",

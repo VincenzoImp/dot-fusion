@@ -56,6 +56,10 @@ function createProvider(rpc: string): ethers.JsonRpcProvider {
 const ESCROW_ABI = [
     "function createSwap(bytes32 swapId, bytes32 secretHash, address payable taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 timelock, bytes32 polkadotSender) external payable",
     "function createNativeSwap(bytes32 swapId, bytes32 secretHash, address payable maker, uint256 timelock) external payable",
+    "function completeSwap(bytes32 swapId, bytes32 secret) external",
+    "function completeSwap(bytes32 swapId, bytes32 secret, address target) external",
+    "event SwapCompleted(bytes32 indexed swapId, bytes32 secret)",
+    "function getSwap(bytes32 swapId) external view returns (tuple(bytes32 secretHash, address maker, address taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 unlockTime, uint8 state, bytes32 swapId, bytes32 polkadotSender))",
 ];
 
 // Helper function
@@ -266,8 +270,71 @@ app.get("/balance", async (req, res) => {
     }
 });
 
+/**
+ * Auto-Claim: Watch for user claims and automatically claim resolver funds
+ */
+async function setupAutoClaimListeners() {
+    try {
+        console.log("\n🔔 Setting up auto-claim listeners...");
+
+        const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
+        const paseoProvider = createProvider(CONFIG.PASEO_RPC);
+
+        const sepoliaWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, sepoliaProvider);
+        const paseoWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, paseoProvider);
+
+        const sepoliaEscrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, sepoliaWallet);
+        const paseoEscrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, paseoWallet);
+
+        // Listen for SwapCompleted events on Polkadot (user claimed DOT)
+        // → Resolver should claim ETH on Ethereum
+        paseoEscrow.on("SwapCompleted", async (swapId: string, secret: string, event: any) => {
+            console.log(`\n🔔 User claimed DOT on Polkadot! Swap ID: ${swapId}`);
+            console.log(`Secret revealed: ${secret}`);
+            console.log(`→ Claiming ETH on Ethereum...`);
+
+            try {
+                const tx = await sepoliaEscrow.completeSwap(swapId, secret);
+                console.log(`✅ Resolver claimed ETH! TX: ${tx.hash}`);
+                await tx.wait();
+                console.log(`✅ Confirmed in block`);
+            } catch (error: any) {
+                console.error(`❌ Failed to claim ETH:`, error.message);
+            }
+        });
+
+        // Listen for SwapCompleted events on Ethereum (user claimed ETH)
+        // → Resolver should claim DOT on Polkadot
+        sepoliaEscrow.on("SwapCompleted", async (swapId: string, secret: string, event: any) => {
+            console.log(`\n🔔 User claimed ETH on Ethereum! Swap ID: ${swapId}`);
+            console.log(`Secret revealed: ${secret}`);
+            console.log(`→ Claiming DOT on Polkadot...`);
+
+            try {
+                // For Polkadot, we need to pass the resolver's address as the target
+                const tx = await paseoEscrow["completeSwap(bytes32,bytes32,address)"](
+                    swapId,
+                    secret,
+                    CONFIG.RESOLVER_ADDRESS
+                );
+                console.log(`✅ Resolver claimed DOT! TX: ${tx.hash}`);
+                await tx.wait();
+                console.log(`✅ Confirmed in block`);
+            } catch (error: any) {
+                console.error(`❌ Failed to claim DOT:`, error.message);
+            }
+        });
+
+        console.log("✅ Auto-claim listeners active on both chains!");
+
+    } catch (error: any) {
+        console.error("❌ Failed to setup auto-claim listeners:", error.message);
+        console.error("⚠️  Resolver will NOT automatically claim funds!");
+    }
+}
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║              🚀 DotFusion Resolver API 🚀                     ║
@@ -294,6 +361,9 @@ app.listen(PORT, () => {
 ⚠️  WARNING: RESOLVER_ADDRESS and RESOLVER_PRIVATE_KEY not set in .env!
 The API is running but won't be able to fulfill swaps.
     `);
+    } else {
+        // Setup auto-claim listeners
+        await setupAutoClaimListeners();
     }
 });
 
