@@ -69,6 +69,27 @@ const deployAll: DeployFunction = async function (hre: HardhatRuntimeEnvironment
       console.log(`✅ XCM Bridge deployed: ${xcmBridgeResult.address}`);
     }
 
+    // Step 4: Configure XCM Bridge
+    console.log("\n🔧 Step 4: Configuring XCM Bridge...");
+    const xcmBridge = await hre.ethers.getContractAt("DotFusionXCMBridge", xcmBridgeResult.address);
+
+    // Configure bridge with escrow addresses
+    const configureTx = await xcmBridge.configureBridge(
+      dotEscrowResult.address, // Polkadot escrow
+      ethEscrowResult.address, // Ethereum escrow (for reference)
+      1000, // Ethereum parachain ID (example)
+    );
+    await configureTx.wait();
+    console.log(`✅ XCM Bridge configured. TX: ${configureTx.hash}`);
+
+    // Step 5: Set XCM Bridge in Polkadot Escrow
+    console.log("\n🔗 Step 5: Linking XCM Bridge to Polkadot Escrow...");
+    const polkadotEscrow = await hre.ethers.getContractAt("DotFusionPolkadotEscrow", dotEscrowResult.address);
+
+    const linkTx = await polkadotEscrow.setXCMBridge(xcmBridgeResult.address);
+    await linkTx.wait();
+    console.log(`✅ XCM Bridge linked to Polkadot Escrow. TX: ${linkTx.hash}`);
+
     // Summary
     console.log("\n" + "=".repeat(60));
     console.log("🎉 DEPLOYMENT COMPLETE!");
@@ -81,7 +102,7 @@ const deployAll: DeployFunction = async function (hre: HardhatRuntimeEnvironment
     console.log("\n📝 Next Steps:");
     console.log("   1. Verify contracts on block explorers");
     console.log("   2. Update frontend configuration");
-    console.log("   3. Set escrow address in XCM bridge");
+    console.log("   3. Configure XCM channels between parachains");
     console.log("   4. Test cross-chain swap functionality");
     console.log("   5. Deploy to mainnet when ready");
 

@@ -41,11 +41,14 @@ contract DotFusionEthereumEscrow is ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════════════
 
     mapping(bytes32 => Swap) public swaps;
-    
+
     // Owner and rescue delays
     address public immutable owner;
     uint32 public immutable rescueDelay;
     address public immutable accessToken;
+
+    // Minimum timelock to ensure T_eth > T_dot (recommended: 12 hours)
+    uint256 public constant MIN_TIMELOCK = 12 hours;
 
     // ═══════════════════════════════════════════════════════════════════
     //                            EVENTS
@@ -91,6 +94,7 @@ contract DotFusionEthereumEscrow is ReentrancyGuard {
     error Unauthorized();
     error TransferFailed();
     error InvalidParameters();
+    error TimelockTooShort();
 
     // ═══════════════════════════════════════════════════════════════════
     //                            MODIFIERS
@@ -149,6 +153,7 @@ contract DotFusionEthereumEscrow is ReentrancyGuard {
         if (exchangeRate == 0) revert InvalidParameters();
         if (swaps[swapId].state != SwapState.INVALID) revert SwapAlreadyExists();
         if (msg.value != ethAmount) revert InvalidAmount();
+        if (timelock < MIN_TIMELOCK) revert TimelockTooShort();
         
         uint256 unlockTime = block.timestamp + timelock;
         

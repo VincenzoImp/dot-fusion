@@ -1,385 +1,545 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { NextPage } from "next";
-import { toast } from "react-hot-toast";
-import { keccak256, parseEther, toHex } from "viem";
+import { useState } from "react";
+import { NextPage } from "next";
+import { encodePacked, keccak256, parseEther, toHex } from "viem";
 import { useAccount } from "wagmi";
-import { ArrowPathIcon, CheckCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { Address, AddressInput, EtherInput, IntegerInput } from "~~/components/scaffold-eth";
-import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import {
+  ArrowRightIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentDuplicateIcon,
+  ExclamationTriangleIcon,
+  KeyIcon,
+  LockClosedIcon,
+  PlusCircleIcon,
+} from "@heroicons/react/24/outline";
+import { AddressInput, EtherInput, InputBase } from "~~/components/scaffold-eth";
+import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { notification } from "~~/utils/scaffold-eth";
 
-type SwapDirection = "ethereum-to-polkadot" | "polkadot-to-ethereum";
+type SwapDirection = "ETH_TO_DOT" | "DOT_TO_ETH";
 
-const CreateSwap: NextPage = () => {
+interface SwapFormData {
+  direction: SwapDirection;
+  takerEthAddress: string;
+  takerPolkadotAddress: string;
+  ethAmount: string;
+  dotAmount: string;
+  timelockHours: string;
+}
+
+interface GeneratedSwapData {
+  secret: string;
+  secretHash: string;
+  swapId: string;
+}
+
+/**
+ * Swap Creation Page - Updated for XCM Bridge Integration
+ */
+const CreateSwapPage: NextPage = () => {
   const { address: connectedAddress, isConnected } = useAccount();
-  const [swapDirection, setSwapDirection] = useState<SwapDirection>("ethereum-to-polkadot");
-  const [takerAddress, setTakerAddress] = useState<string>("");
-  const [ethAmount, setEthAmount] = useState<string>("");
-  const [dotAmount, setDotAmount] = useState<string>("");
-  const [exchangeRate, setExchangeRate] = useState<string>("100"); // Default: 100 DOT per ETH
-  const [polkadotSender, setPolkadotSender] = useState<string>("");
-  const [timelock, setTimelock] = useState<string>("3600"); // 1 hour default
-  const [secret, setSecret] = useState<string>("");
-  const [secretHash, setSecretHash] = useState<string>("");
-  const [isGeneratingSecret, setIsGeneratingSecret] = useState(false);
-  const [isCreatingSwap, setIsCreatingSwap] = useState(false);
 
-  // Generate secret hash when secret changes
-  useEffect(() => {
-    if (secret) {
-      try {
-        const hash = keccak256(toHex(secret));
-        setSecretHash(hash);
-      } catch (error) {
-        console.error("Error generating secret hash:", error);
-      }
-    } else {
-      setSecretHash("");
-    }
-  }, [secret]);
+  // Form state
+  const [formData, setFormData] = useState<SwapFormData>({
+    direction: "ETH_TO_DOT",
+    takerEthAddress: "",
+    takerPolkadotAddress: "",
+    ethAmount: "",
+    dotAmount: "",
+    timelockHours: "12",
+  });
 
-  // Calculate DOT amount based on ETH amount and exchange rate
-  useEffect(() => {
-    if (ethAmount && exchangeRate) {
-      try {
-        const eth = parseFloat(ethAmount);
-        const rate = parseFloat(exchangeRate);
-        const dot = eth * rate;
-        setDotAmount(dot.toString());
-      } catch (error) {
-        console.error("Error calculating DOT amount:", error);
-      }
-    } else {
-      setDotAmount("");
-    }
-  }, [ethAmount, exchangeRate]);
+  // Form setters
+  const setTakerEthAddress = (value: string) => setFormData({ ...formData, takerEthAddress: value });
+  const setTakerPolkadotAddress = (value: string) => setFormData({ ...formData, takerPolkadotAddress: value });
+  const setEthAmount = (value: string) => setFormData({ ...formData, ethAmount: value });
+  const setDotAmount = (value: string) => setFormData({ ...formData, dotAmount: value });
+  const setTimelockHours = (value: string) => setFormData({ ...formData, timelockHours: value });
 
-  // Contract write hook
-  const { writeContractAsync: writeEthereumEscrowAsync } = useScaffoldWriteContract({
+  // Generated swap data
+  const [swapData, setSwapData] = useState<GeneratedSwapData | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [swapCreated, setSwapCreated] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Contract hooks
+  const { writeContractAsync: writeEthereumEscrow } = useScaffoldWriteContract({
     contractName: "DotFusionEthereumEscrow",
   });
 
-  // Generate random secret
+  const { writeContractAsync: writePolkadotEscrow } = useScaffoldWriteContract({
+    contractName: "DotFusionPolkadotEscrow",
+  });
+
+  // Read contract data
+  const { data: minTimelock } = useScaffoldReadContract({
+    contractName: "DotFusionEthereumEscrow",
+    functionName: "MIN_TIMELOCK",
+  });
+
+  const { data: maxTimelock } = useScaffoldReadContract({
+    contractName: "DotFusionPolkadotEscrow",
+    functionName: "MAX_TIMELOCK",
+  });
+
+  /**
+   * Generate cryptographically secure random secret
+   */
   const generateSecret = () => {
-    setIsGeneratingSecret(true);
-    const randomSecret = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    setSecret(randomSecret);
-    setIsGeneratingSecret(false);
-  };
-
-  // Create swap
-  const createSwap = async () => {
-    if (!isConnected) {
-      toast.error("Please connect your wallet first");
-      return;
-    }
-
-    if (!takerAddress || !ethAmount || !dotAmount || !exchangeRate || !polkadotSender || !secretHash || !timelock) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
+    setIsGenerating(true);
     try {
-      setIsCreatingSwap(true);
+      // Generate random 32 bytes
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      const secretHex = `0x${Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("")}`;
+
+      // Compute hash using the same method as contracts
+      const hash = keccak256(encodePacked(["bytes32"], [secretHex as `0x${string}`]));
 
       // Generate unique swap ID
-      const swapId = keccak256(toHex(`${connectedAddress}-${takerAddress}-${Date.now()}`));
+      const timestamp = Date.now();
+      const id = keccak256(toHex(`swap_${connectedAddress}_${timestamp}`));
 
-      // Convert Polkadot address to bytes32
-      // Remove 0x prefix, pad to 64 hex characters (32 bytes), add 0x back
-      const cleanAddress = polkadotSender.startsWith("0x") ? polkadotSender.slice(2) : polkadotSender;
-      const paddedAddress = cleanAddress.toLowerCase().padEnd(64, "0");
-      const polkadotSenderBytes = `0x${paddedAddress}` as `0x${string}`;
-
-      await writeEthereumEscrowAsync({
-        functionName: "createSwap",
-        args: [
-          swapId,
-          secretHash as `0x${string}`,
-          takerAddress as `0x${string}`,
-          parseEther(ethAmount),
-          parseEther(dotAmount),
-          parseEther(exchangeRate),
-          BigInt(timelock),
-          polkadotSenderBytes,
-        ],
-        value: parseEther(ethAmount), // Send ETH amount
+      setSwapData({
+        secret: secretHex,
+        secretHash: hash,
+        swapId: id,
       });
 
-      toast.success("ETH-DOT swap created successfully!");
+      notification.success("🔐 Secret generated securely!");
+    } catch (error) {
+      console.error("Error generating secret:", error);
+      notification.error("Failed to generate secret");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-      // Reset form
-      setTakerAddress("");
-      setEthAmount("");
-      setDotAmount("");
-      setExchangeRate("100");
-      setPolkadotSender("");
-      setSecret("");
-      setSecretHash("");
+  /**
+   * Copy text to clipboard
+   */
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    notification.success(`${label} copied!`);
+  };
+
+  /**
+   * Create the swap based on direction
+   */
+  const createSwap = async () => {
+    if (!isConnected) {
+      notification.error("Please connect your wallet");
+      return;
+    }
+
+    if (!swapData) {
+      notification.error("Please generate a secret first");
+      return;
+    }
+
+    if (!formData.takerEthAddress || !formData.takerPolkadotAddress) {
+      notification.error("Please enter taker addresses");
+      return;
+    }
+
+    if (!formData.ethAmount || !formData.dotAmount) {
+      notification.error("Please enter amounts");
+      return;
+    }
+
+    const timelockSeconds = parseInt(formData.timelockHours) * 3600;
+    const minTimelockSeconds = minTimelock ? Number(minTimelock) : 12 * 3600;
+    const maxTimelockSeconds = maxTimelock ? Number(maxTimelock) : 7 * 24 * 3600;
+
+    if (timelockSeconds < minTimelockSeconds || timelockSeconds > maxTimelockSeconds) {
+      notification.error(
+        `Timelock must be between ${minTimelockSeconds / 3600} and ${maxTimelockSeconds / 3600} hours`,
+      );
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      if (formData.direction === "ETH_TO_DOT") {
+        // Create swap on Ethereum
+        await writeEthereumEscrow({
+          functionName: "createSwap",
+          args: [
+            swapData.swapId as `0x${string}`,
+            swapData.secretHash as `0x${string}`,
+            formData.takerEthAddress as `0x${string}`,
+            parseEther(formData.ethAmount),
+            parseEther(formData.dotAmount),
+            BigInt((parseFloat(formData.dotAmount) / parseFloat(formData.ethAmount)) * 1e18), // exchange rate
+            BigInt(timelockSeconds),
+            formData.takerPolkadotAddress as `0x${string}`,
+          ],
+          value: parseEther(formData.ethAmount),
+        });
+
+        notification.success("✅ ETH swap created on Ethereum!");
+      } else {
+        // Create swap on Polkadot
+        await writePolkadotEscrow({
+          functionName: "createNativeSwap",
+          args: [
+            swapData.swapId as `0x${string}`,
+            swapData.secretHash as `0x${string}`,
+            formData.takerEthAddress as `0x${string}`,
+            BigInt(timelockSeconds),
+          ],
+          value: parseEther(formData.dotAmount),
+        });
+
+        notification.success("✅ DOT swap created on Polkadot!");
+      }
+
+      setSwapCreated(true);
     } catch (error) {
       console.error("Error creating swap:", error);
-      toast.error("Failed to create swap. Please try again.");
+      notification.error("Failed to create swap");
     } finally {
-      setIsCreatingSwap(false);
+      setIsCreating(false);
     }
+  };
+
+  /**
+   * Reset form
+   */
+  const resetForm = () => {
+    setFormData({
+      direction: "ETH_TO_DOT",
+      takerEthAddress: "",
+      takerPolkadotAddress: "",
+      ethAmount: "",
+      dotAmount: "",
+      timelockHours: "12",
+    });
+    setSwapData(null);
+    setSwapCreated(false);
   };
 
   if (!isConnected) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <ExclamationTriangleIcon className="h-16 w-16 text-warning mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-4">Wallet Not Connected</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">Please connect your wallet to create atomic swaps.</p>
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <div className="card w-96 bg-base-200 shadow-xl">
+          <div className="card-body text-center">
+            <ExclamationTriangleIcon className="w-16 h-16 text-warning mx-auto mb-4" />
+            <h2 className="card-title justify-center">Wallet Not Connected</h2>
+            <p className="opacity-70">Please connect your wallet to create atomic swaps</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-base-100 py-8">
+      <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Create ETH-DOT Cross-Chain Swap</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Swap ETH on Ethereum for DOT on Polkadot using secure atomic swaps with fixed exchange rates
+          <h1 className="text-4xl font-bold mb-4">Create Atomic Swap</h1>
+          <p className="text-lg opacity-70">
+            Generate a secret and create a cross-chain swap between Ethereum and Polkadot
           </p>
         </div>
 
-        {/* Swap Direction Selector */}
-        <div className="card bg-base-100 shadow-xl mb-8">
-          <div className="card-body">
-            <h2 className="card-title mb-4">Swap Direction</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                className={`btn btn-outline ${swapDirection === "ethereum-to-polkadot" ? "btn-primary" : ""}`}
-                onClick={() => setSwapDirection("ethereum-to-polkadot")}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  Ethereum → Polkadot
-                </div>
-              </button>
-              <button
-                className={`btn btn-outline ${swapDirection === "polkadot-to-ethereum" ? "btn-primary" : ""}`}
-                onClick={() => setSwapDirection("polkadot-to-ethereum")}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  Polkadot → Ethereum
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
+        {!swapCreated ? (
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column - Form */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6">
+                  <PlusCircleIcon className="w-6 h-6" />
+                  Swap Configuration
+                </h2>
 
-        {/* Swap Form */}
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title mb-6">Swap Details</h2>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Taker Address */}
-                <div className="form-control">
+                {/* Swap Direction */}
+                <div className="form-control mb-4">
                   <label className="label">
-                    <span className="label-text font-semibold">Taker Address</span>
-                    <span className="label-text-alt text-error">*</span>
+                    <span className="label-text font-semibold">Swap Direction</span>
                   </label>
-                  <AddressInput
-                    value={takerAddress}
-                    onChange={setTakerAddress}
-                    placeholder="Enter taker's wallet address"
-                  />
-                </div>
-
-                {/* ETH Amount */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">ETH Amount</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <EtherInput value={ethAmount} onChange={setEthAmount} placeholder="0.0" />
-                </div>
-
-                {/* Exchange Rate */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Exchange Rate (DOT per ETH)</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    className="input input-bordered"
-                    value={exchangeRate}
-                    onChange={e => setExchangeRate(e.target.value)}
-                    placeholder="100"
-                    step="0.01"
-                  />
-                </div>
-
-                {/* DOT Amount (calculated) */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">DOT Amount (calculated)</span>
-                  </label>
-                  <div className="p-3 bg-base-200 rounded-lg">
-                    <span className="text-lg font-semibold">{dotAmount || "0"} DOT</span>
+                  <div className="flex gap-4">
+                    <label className="cursor-pointer label">
+                      <input
+                        type="radio"
+                        name="direction"
+                        className="radio radio-primary"
+                        checked={formData.direction === "ETH_TO_DOT"}
+                        onChange={() => setFormData({ ...formData, direction: "ETH_TO_DOT" })}
+                      />
+                      <span className="label-text ml-2">ETH → DOT</span>
+                    </label>
+                    <label className="cursor-pointer label">
+                      <input
+                        type="radio"
+                        name="direction"
+                        className="radio radio-primary"
+                        checked={formData.direction === "DOT_TO_ETH"}
+                        onChange={() => setFormData({ ...formData, direction: "DOT_TO_ETH" })}
+                      />
+                      <span className="label-text ml-2">DOT → ETH</span>
+                    </label>
                   </div>
                 </div>
 
-                {/* Polkadot Sender Address */}
-                <div className="form-control">
+                {/* Taker Addresses */}
+                <div className="form-control mb-4">
                   <label className="label">
-                    <span className="label-text font-semibold">Polkadot Sender Address</span>
-                    <span className="label-text-alt text-error">*</span>
+                    <span className="label-text font-semibold">Taker Ethereum Address</span>
                   </label>
-                  <input
-                    type="text"
-                    className="input input-bordered"
-                    value={polkadotSender}
-                    onChange={e => setPolkadotSender(e.target.value)}
-                    placeholder="0x... (32 bytes hex) or SS58 address"
-                  />
+                  <AddressInput value={formData.takerEthAddress} onChange={setTakerEthAddress} placeholder="0x..." />
+                </div>
+
+                <div className="form-control mb-4">
                   <label className="label">
-                    <span className="label-text-alt">
-                      The Polkadot address that will provide DOT tokens. Can be hex (0x...) or SS58 format.
+                    <span className="label-text font-semibold">Taker Polkadot Address</span>
+                  </label>
+                  <InputBase
+                    value={formData.takerPolkadotAddress}
+                    onChange={setTakerPolkadotAddress}
+                    placeholder="1A2B3C4D5E6F7G8H9I0J..."
+                  />
+                </div>
+
+                {/* Amounts */}
+                <div className="form-control mb-4">
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      {formData.direction === "ETH_TO_DOT" ? "ETH Amount" : "DOT Amount"}
                     </span>
                   </label>
+                  <EtherInput
+                    value={formData.direction === "ETH_TO_DOT" ? formData.ethAmount : formData.dotAmount}
+                    onChange={formData.direction === "ETH_TO_DOT" ? setEthAmount : setDotAmount}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div className="form-control mb-4">
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      {formData.direction === "ETH_TO_DOT" ? "DOT Amount" : "ETH Amount"}
+                    </span>
+                  </label>
+                  <EtherInput
+                    value={formData.direction === "ETH_TO_DOT" ? formData.dotAmount : formData.ethAmount}
+                    onChange={formData.direction === "ETH_TO_DOT" ? setDotAmount : setEthAmount}
+                    placeholder="0.0"
+                  />
                 </div>
 
                 {/* Timelock */}
-                <div className="form-control">
+                <div className="form-control mb-6">
                   <label className="label">
-                    <span className="label-text font-semibold">Timelock (seconds)</span>
-                    <span className="label-text-alt text-error">*</span>
+                    <span className="label-text font-semibold">
+                      <ClockIcon className="w-4 h-4 inline mr-1" />
+                      Timelock (hours)
+                    </span>
                   </label>
-                  <IntegerInput value={timelock} onChange={setTimelock} placeholder="3600" />
-                  <label className="label">
-                    <span className="label-text-alt">Time before swap can be cancelled (default: 1 hour)</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Secret */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Secret</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="input input-bordered flex-1"
-                      value={secret}
-                      onChange={e => setSecret(e.target.value)}
-                      placeholder="Enter or generate a secret"
-                    />
-                    <button className="btn btn-outline" onClick={generateSecret} disabled={isGeneratingSecret}>
-                      {isGeneratingSecret ? <span className="loading loading-spinner loading-sm"></span> : "Generate"}
-                    </button>
-                  </div>
+                  <input
+                    type="number"
+                    className="input input-bordered w-full"
+                    value={formData.timelockHours}
+                    onChange={e => setTimelockHours(e.target.value)}
+                    placeholder="12"
+                    min={minTimelock ? Number(minTimelock) / 3600 : 12}
+                    max={maxTimelock ? Number(maxTimelock) / 3600 : 168}
+                  />
                   <label className="label">
                     <span className="label-text-alt">
-                      Keep this secret safe! You&apos;ll need it to complete the swap.
+                      Min: {minTimelock ? Number(minTimelock) / 3600 : 12}h, Max:{" "}
+                      {maxTimelock ? Number(maxTimelock) / 3600 : 168}h
                     </span>
                   </label>
                 </div>
 
-                {/* Secret Hash */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Secret Hash</span>
-                  </label>
-                  <div className="p-3 bg-base-200 rounded-lg">
-                    <code className="text-sm break-all">{secretHash || "Enter a secret to generate hash"}</code>
-                  </div>
-                  <label className="label">
-                    <span className="label-text-alt">This hash will be used to lock the swap</span>
-                  </label>
-                </div>
+                {/* Generate Secret Button */}
+                <button
+                  className={`btn btn-primary w-full mb-4 ${isGenerating ? "loading" : ""}`}
+                  onClick={generateSecret}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    "Generating..."
+                  ) : (
+                    <>
+                      <KeyIcon className="w-5 h-5" />
+                      Generate Secret
+                    </>
+                  )}
+                </button>
 
-                {/* Connected Address Display */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Your Address</span>
-                  </label>
-                  <div className="p-3 bg-base-200 rounded-lg">
-                    <Address address={connectedAddress} />
-                  </div>
-                </div>
+                {/* Create Swap Button */}
+                <button
+                  className={`btn btn-success w-full ${isCreating ? "loading" : ""}`}
+                  onClick={createSwap}
+                  disabled={!swapData || isCreating}
+                >
+                  {isCreating ? (
+                    "Creating Swap..."
+                  ) : (
+                    <>
+                      <LockClosedIcon className="w-5 h-5" />
+                      Create Swap
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="card-actions justify-end mt-8">
-              <button
-                className="btn btn-primary btn-lg"
-                onClick={createSwap}
-                disabled={
-                  isCreatingSwap ||
-                  !takerAddress ||
-                  !ethAmount ||
-                  !dotAmount ||
-                  !exchangeRate ||
-                  !polkadotSender ||
-                  !secretHash
-                }
-              >
-                {isCreatingSwap ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Creating Swap...
-                  </>
+            {/* Right Column - Generated Data */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6">
+                  <KeyIcon className="w-6 h-6" />
+                  Generated Swap Data
+                </h2>
+
+                {swapData ? (
+                  <div className="space-y-4">
+                    {/* Secret Hash */}
+                    <div>
+                      <label className="label">
+                        <span className="label-text font-semibold">Secret Hash</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="input input-bordered w-full font-mono text-sm"
+                          value={swapData.secretHash}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => copyToClipboard(swapData.secretHash, "Secret Hash")}
+                        >
+                          <DocumentDuplicateIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Swap ID */}
+                    <div>
+                      <label className="label">
+                        <span className="label-text font-semibold">Swap ID</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="input input-bordered w-full font-mono text-sm"
+                          value={swapData.swapId}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => copyToClipboard(swapData.swapId, "Swap ID")}
+                        >
+                          <DocumentDuplicateIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Secret (Hidden) */}
+                    <div>
+                      <label className="label">
+                        <span className="label-text font-semibold">Secret (Keep Private!)</span>
+                      </label>
+                      <div className="alert alert-warning">
+                        <ExclamationTriangleIcon className="w-5 h-5" />
+                        <span className="text-sm">Keep this secret private until you want to complete the swap!</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="input input-bordered w-full font-mono text-sm"
+                          value={swapData.secret}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => copyToClipboard(swapData.secret, "Secret")}
+                        >
+                          <DocumentDuplicateIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="alert alert-info">
+                      <CheckCircleIcon className="w-5 h-5" />
+                      <div>
+                        <h3 className="font-bold">Next Steps:</h3>
+                        <ol className="list-decimal list-inside text-sm mt-2 space-y-1">
+                          <li>Share the Secret Hash and Swap ID with your counter party</li>
+                          <li>Wait for them to create the matching swap on the other chain</li>
+                          <li>Use the Secret to complete the swap when ready</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <ArrowPathIcon className="h-5 w-5" />
-                    Create Swap
-                  </>
+                  <div className="text-center py-8">
+                    <KeyIcon className="w-16 h-16 text-base-content/30 mx-auto mb-4" />
+                    <p className="opacity-70">Generate a secret to see the swap data</p>
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Information Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div className="card bg-base-100 shadow-xl">
+        ) : (
+          /* Success State */
+          <div className="card bg-base-200 shadow-xl max-w-2xl mx-auto">
             <div className="card-body text-center">
-              <CheckCircleIcon className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <h3 className="card-title text-sm justify-center">Cross-Chain</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300">
-                Swap ETH on Ethereum for DOT on Polkadot using atomic swaps
-              </p>
-            </div>
-          </div>
+              <CheckCircleIcon className="w-16 h-16 text-success mx-auto mb-4" />
+              <h2 className="card-title justify-center text-2xl">Swap Created Successfully!</h2>
+              <p className="opacity-70 mb-6">Your atomic swap has been created and is waiting for a counter party.</p>
 
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body text-center">
-              <ClockIcon className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-              <h3 className="card-title text-sm justify-center">Fixed Rate</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300">Exchange rate is fixed at swap creation time</p>
-            </div>
-          </div>
+              {swapData && (
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Swap ID</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="input input-bordered w-full font-mono text-sm"
+                        value={swapData.swapId}
+                        readOnly
+                      />
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => copyToClipboard(swapData.swapId, "Swap ID")}
+                      >
+                        <DocumentDuplicateIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body text-center">
-              <ArrowPathIcon className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-              <h3 className="card-title text-sm justify-center">Atomic</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300">
-                The swap either completes entirely or fails completely
-              </p>
+              <div className="flex gap-4 justify-center">
+                <button className="btn btn-primary" onClick={resetForm}>
+                  <PlusCircleIcon className="w-5 h-5" />
+                  Create Another Swap
+                </button>
+                <a href="/swaps" className="btn btn-outline">
+                  <ArrowRightIcon className="w-5 h-5" />
+                  View My Swaps
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default CreateSwap;
+export default CreateSwapPage;

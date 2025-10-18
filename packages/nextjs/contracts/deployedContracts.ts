@@ -1279,7 +1279,7 @@ const deployedContracts = {
   },
   11155111: {
     DotFusionEthereumEscrow: {
-      address: "0x0795d75e7B8B64C07DdbF5a3B190d1C7CaeCD100",
+      address: "0xC8FE57b90fE5F31b8d3A4b9bC880354Ba00Ed78F",
       abi: [
         {
           inputs: [
@@ -1340,6 +1340,11 @@ const deployedContracts = {
         {
           inputs: [],
           name: "TimelockNotExpired",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TimelockTooShort",
           type: "error",
         },
         {
@@ -1463,6 +1468,19 @@ const deployedContracts = {
           ],
           name: "SwapCreated",
           type: "event",
+        },
+        {
+          inputs: [],
+          name: "MIN_TIMELOCK",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
         },
         {
           inputs: [],
@@ -1792,10 +1810,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9437980,
+      deployedOnBlock: 9438313,
     },
     DotFusionPolkadotEscrow: {
-      address: "0x3FFF14cA84EF80c8B5cBCad92BAA1a0E893264Fa",
+      address: "0x7746898067864b0cd3F3FfB3693c4Ec6A715b5E4",
       abi: [
         {
           inputs: [
@@ -1898,12 +1916,22 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "TimelockTooLong",
+          type: "error",
+        },
+        {
+          inputs: [],
           name: "TransferFailed",
           type: "error",
         },
         {
           inputs: [],
           name: "Unauthorized",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "XCMBridgeNotSet",
           type: "error",
         },
         {
@@ -2014,6 +2042,19 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "MAX_TIMELOCK",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "accessToken",
           outputs: [
             {
@@ -2078,6 +2119,34 @@ const deployedContracts = {
           name: "completeSwap",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "maker",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "timelock",
+              type: "uint256",
+            },
+          ],
+          name: "createNativeSwap",
+          outputs: [],
+          stateMutability: "payable",
           type: "function",
         },
         {
@@ -2175,6 +2244,11 @@ const deployedContracts = {
                   name: "swapId",
                   type: "bytes32",
                 },
+                {
+                  internalType: "bool",
+                  name: "isNative",
+                  type: "bool",
+                },
               ],
               internalType: "struct DotFusionPolkadotEscrow.Swap",
               name: "swap",
@@ -2228,6 +2302,24 @@ const deployedContracts = {
               name: "swapId",
               type: "bytes32",
             },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "propagateSecretToEthereum",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
           ],
           name: "publicCancelSwap",
           outputs: [],
@@ -2248,17 +2340,17 @@ const deployedContracts = {
             },
             {
               internalType: "address payable",
-              name: "receiver",
+              name: "",
               type: "address",
             },
             {
               internalType: "uint256",
-              name: "amount",
+              name: "",
               type: "uint256",
             },
             {
               internalType: "bytes32",
-              name: "ethereumSender",
+              name: "",
               type: "bytes32",
             },
           ],
@@ -2289,6 +2381,19 @@ const deployedContracts = {
             },
           ],
           name: "rescueFunds",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_xcmBridge",
+              type: "address",
+            },
+          ],
+          name: "setXCMBridge",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -2348,6 +2453,24 @@ const deployedContracts = {
               name: "swapId",
               type: "bytes32",
             },
+            {
+              internalType: "bool",
+              name: "isNative",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "xcmBridge",
+          outputs: [
+            {
+              internalType: "contract DotFusionXCMBridge",
+              name: "",
+              type: "address",
+            },
           ],
           stateMutability: "view",
           type: "function",
@@ -2358,10 +2481,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9437982,
+      deployedOnBlock: 9438872,
     },
     DotFusionXCMBridge: {
-      address: "0xea5916493AeCfa7bf6A42E08FA3Cf90d17B362Cf",
+      address: "0x831681da02AD4852Ab1D7A835CD30d256f72A292",
       abi: [
         {
           inputs: [],
@@ -2375,12 +2498,37 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "InsufficientFee",
+          type: "error",
+        },
+        {
+          inputs: [],
           name: "InvalidAddress",
           type: "error",
         },
         {
           inputs: [],
+          name: "InvalidParaId",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "MessageAlreadyProcessed",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SecretAlreadyPropagated",
+          type: "error",
+        },
+        {
+          inputs: [],
           name: "Unauthorized",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "XCMCallFailed",
           type: "error",
         },
         {
@@ -2395,11 +2543,17 @@ const deployedContracts = {
             {
               indexed: true,
               internalType: "address",
-              name: "xcmPrecompileAddress",
+              name: "ethereumEscrowAddress",
               type: "address",
             },
+            {
+              indexed: false,
+              internalType: "uint32",
+              name: "ethereumParaId",
+              type: "uint32",
+            },
           ],
-          name: "BridgeDeployed",
+          name: "BridgeConfigured",
           type: "event",
         },
         {
@@ -2448,9 +2602,104 @@ const deployedContracts = {
               name: "secret",
               type: "bytes32",
             },
+            {
+              indexed: false,
+              internalType: "uint32",
+              name: "destination",
+              type: "uint32",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "fee",
+              type: "uint256",
+            },
           ],
           name: "MessageSent",
           type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "ethereumEscrow",
+              type: "address",
+            },
+          ],
+          name: "SecretPropagated",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "oldFee",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "newFee",
+              type: "uint256",
+            },
+          ],
+          name: "XCMFeeUpdated",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "ETHEREUM_ESCROW_ADDRESS",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "ETHEREUM_PARACHAIN_ID",
+          outputs: [
+            {
+              internalType: "uint32",
+              name: "",
+              type: "uint32",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "MIN_XCM_FEE",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
         },
         {
           inputs: [],
@@ -2463,6 +2712,29 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_escrow",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "_ethereumEscrow",
+              type: "address",
+            },
+            {
+              internalType: "uint32",
+              name: "_ethereumParaId",
+              type: "uint32",
+            },
+          ],
+          name: "configureBridge",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -2479,6 +2751,110 @@ const deployedContracts = {
           type: "function",
         },
         {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "getMessage",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "bytes32",
+                  name: "swapId",
+                  type: "bytes32",
+                },
+                {
+                  internalType: "bytes32",
+                  name: "secret",
+                  type: "bytes32",
+                },
+                {
+                  internalType: "address",
+                  name: "targetContract",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "timestamp",
+                  type: "uint256",
+                },
+                {
+                  internalType: "bool",
+                  name: "processed",
+                  type: "bool",
+                },
+              ],
+              internalType: "struct DotFusionXCMBridge.XCMMessage",
+              name: "message",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "isSecretPropagated",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "propagated",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "",
+              type: "bytes32",
+            },
+          ],
+          name: "messages",
+          outputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+            {
+              internalType: "address",
+              name: "targetContract",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "timestamp",
+              type: "uint256",
+            },
+            {
+              internalType: "bool",
+              name: "processed",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
           inputs: [],
           name: "owner",
           outputs: [
@@ -2489,6 +2865,43 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "",
+              type: "bytes32",
+            },
+          ],
+          name: "processedSecrets",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "propagateSecret",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -2540,14 +2953,34 @@ const deployedContracts = {
         {
           inputs: [
             {
-              internalType: "address",
-              name: "_escrow",
-              type: "address",
+              internalType: "uint256",
+              name: "_newFee",
+              type: "uint256",
             },
           ],
-          name: "setEscrow",
+          name: "updateXCMFee",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "withdrawFees",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "xcmFee",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
         {
@@ -2556,12 +2989,12 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9437983,
+      deployedOnBlock: 9438873,
     },
   },
   420420422: {
     DotFusionEthereumEscrow: {
-      address: "0xD70DD3659DddB5Cf2F14BD194a1824344280D032",
+      address: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
       abi: [
         {
           inputs: [
@@ -2622,6 +3055,11 @@ const deployedContracts = {
         {
           inputs: [],
           name: "TimelockNotExpired",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TimelockTooShort",
           type: "error",
         },
         {
@@ -2745,6 +3183,19 @@ const deployedContracts = {
           ],
           name: "SwapCreated",
           type: "event",
+        },
+        {
+          inputs: [],
+          name: "MIN_TIMELOCK",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
         },
         {
           inputs: [],
@@ -3074,10 +3525,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1813584,
+      deployedOnBlock: 1814160,
     },
     DotFusionPolkadotEscrow: {
-      address: "0x8d94462Be0530f26a7081978108925332cB9ABB8",
+      address: "0xc84E1a9A1772251CA228F34d0af5040B94C7083c",
       abi: [
         {
           inputs: [
@@ -3176,6 +3627,11 @@ const deployedContracts = {
         {
           inputs: [],
           name: "TimelockNotExpired",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TimelockTooLong",
           type: "error",
         },
         {
@@ -3296,6 +3752,19 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "MAX_TIMELOCK",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "accessToken",
           outputs: [
             {
@@ -3360,6 +3829,34 @@ const deployedContracts = {
           name: "completeSwap",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "maker",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "timelock",
+              type: "uint256",
+            },
+          ],
+          name: "createNativeSwap",
+          outputs: [],
+          stateMutability: "payable",
           type: "function",
         },
         {
@@ -3457,6 +3954,11 @@ const deployedContracts = {
                   name: "swapId",
                   type: "bytes32",
                 },
+                {
+                  internalType: "bool",
+                  name: "isNative",
+                  type: "bool",
+                },
               ],
               internalType: "struct DotFusionPolkadotEscrow.Swap",
               name: "swap",
@@ -3530,17 +4032,17 @@ const deployedContracts = {
             },
             {
               internalType: "address payable",
-              name: "receiver",
+              name: "",
               type: "address",
             },
             {
               internalType: "uint256",
-              name: "amount",
+              name: "",
               type: "uint256",
             },
             {
               internalType: "bytes32",
-              name: "ethereumSender",
+              name: "",
               type: "bytes32",
             },
           ],
@@ -3630,6 +4132,11 @@ const deployedContracts = {
               name: "swapId",
               type: "bytes32",
             },
+            {
+              internalType: "bool",
+              name: "isNative",
+              type: "bool",
+            },
           ],
           stateMutability: "view",
           type: "function",
@@ -3640,10 +4147,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1813585,
+      deployedOnBlock: 1814161,
     },
     DotFusionXCMBridge: {
-      address: "0x931b448fa5f3919c454FBe09186e711908D9EbDc",
+      address: "0x418eE7f4c98c37a408db9426302beACa862D7731",
       abi: [
         {
           inputs: [],
@@ -3838,7 +4345,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1813586,
+      deployedOnBlock: 1814162,
     },
   },
 } as const;

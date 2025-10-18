@@ -1,208 +1,209 @@
 "use client";
 
 import Link from "next/link";
-import type { NextPage } from "next";
+import { NextPage } from "next";
 import { useAccount } from "wagmi";
 import {
-  ArrowPathIcon,
-  ChartBarIcon,
+  ArrowRightIcon,
+  BoltIcon,
   ClockIcon,
+  CurrencyDollarIcon,
   GlobeAltIcon,
-  PlusIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
-import { Address, Balance } from "~~/components/scaffold-eth";
 
-// import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
-
-const Home: NextPage = () => {
-  const { address: connectedAddress, isConnected } = useAccount();
-
-  // Read contract data for dashboard stats
-  // const { data: ethereumEscrowAddress } = useScaffoldReadContract({
-  //   contractName: "DotFusionEthereumEscrow",
-  //   functionName: "owner",
-  // });
+const HomePage: NextPage = () => {
+  const { isConnected } = useAccount();
 
   return (
-    <>
-      <div className="flex flex-col grow">
-        {/* Hero Section */}
-        <div className="hero min-h-[60vh] bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-          <div className="hero-content text-center">
-            <div className="max-w-4xl">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                DotFusion
-              </h1>
-              <p className="py-6 text-xl text-gray-600 dark:text-gray-300">
-                Secure, trustless cross-chain atomic swaps between Ethereum and Polkadot ecosystems. Exchange tokens
-                across different blockchain networks without intermediaries.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/swap" className="btn btn-primary btn-lg">
-                  <PlusIcon className="h-5 w-5" />
-                  Create Swap
-                </Link>
-                <Link href="/swaps" className="btn btn-outline btn-lg">
-                  <ClockIcon className="h-5 w-5" />
-                  View My Swaps
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="container mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why Choose DotFusion?</h2>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Built with security and user experience in mind, DotFusion provides the most reliable cross-chain atomic
-              swap experience.
+    <div className="min-h-screen bg-base-100">
+      {/* Hero Section */}
+      <div className="hero min-h-[60vh] bg-gradient-to-br from-primary/10 to-secondary/10">
+        <div className="hero-content text-center">
+          <div className="max-w-4xl">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              DotFusion
+            </h1>
+            <p className="text-2xl font-semibold mt-4">Cross-Chain Atomic Swaps</p>
+            <p className="text-lg opacity-70 mt-6 max-w-2xl mx-auto">
+              Trustless, secure, and fast token exchanges between Ethereum and Polkadot ecosystems. No intermediaries,
+              no wrapped tokens, just pure atomic swaps.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body text-center">
-                <ShieldCheckIcon className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <h3 className="card-title justify-center">Trustless</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  No intermediaries required. Your funds are secured by smart contracts.
-                </p>
-              </div>
-            </div>
-
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body text-center">
-                <ArrowPathIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                <h3 className="card-title justify-center">Atomic</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Swaps either complete entirely or fail completely. No partial states.
-                </p>
-              </div>
-            </div>
-
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body text-center">
-                <GlobeAltIcon className="h-12 w-12 text-purple-500 mx-auto mb-4" />
-                <h3 className="card-title justify-center">Cross-Chain</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Seamlessly bridge between Ethereum and Polkadot ecosystems.
-                </p>
-              </div>
-            </div>
-
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body text-center">
-                <ChartBarIcon className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-                <h3 className="card-title justify-center">Transparent</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  All transactions are verifiable on-chain with comprehensive event logging.
-                </p>
-              </div>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              {isConnected ? (
+                <>
+                  <Link href="/swap" className="btn btn-primary btn-lg">
+                    <BoltIcon className="w-6 h-6" />
+                    Start Swap
+                  </Link>
+                  <Link href="/swaps" className="btn btn-outline btn-lg">
+                    <ClockIcon className="w-6 h-6" />
+                    My Swaps
+                  </Link>
+                </>
+              ) : (
+                <div className="text-center">
+                  <p className="text-lg mb-4">Connect your wallet to get started</p>
+                  <div className="btn btn-primary btn-lg">
+                    <GlobeAltIcon className="w-6 h-6" />
+                    Connect Wallet
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Network Status Section */}
-        <div className="container mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Network Status</h2>
-            <p className="text-gray-600 dark:text-gray-300">Current status of supported networks and contracts</p>
-          </div>
+      {/* Features Section */}
+      <div className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose DotFusion?</h2>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Ethereum Sepolia */}
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-blue-600">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  Ethereum Sepolia
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Status:</span>
-                    <span className="badge badge-success">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Contract:</span>
-                    <span className="text-sm font-mono">0x43bD...B154</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Chain ID:</span>
-                    <span className="text-sm">11155111</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Polkadot Paseo */}
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-purple-600">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  Polkadot Paseo
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Status:</span>
-                    <span className="badge badge-success">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Contract:</span>
-                    <span className="text-sm font-mono">Deployed</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Chain ID:</span>
-                    <span className="text-sm">420420422</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* User Info Section */}
-        {isConnected && (
-          <div className="container mx-auto px-4 py-16">
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title mb-4">Your Account</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Connected Address</h3>
-                    <Address address={connectedAddress} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">ETH Balance</h3>
-                    <Balance address={connectedAddress} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* CTA Section */}
-        <div className="container mx-auto px-4 py-16">
-          <div className="hero bg-base-200 rounded-3xl">
-            <div className="hero-content text-center">
-              <div className="max-w-2xl">
-                <h2 className="text-3xl font-bold mb-4">Ready to Start Swapping?</h2>
-                <p className="mb-6 text-gray-600 dark:text-gray-300">
-                  Connect your wallet and create your first cross-chain atomic swap in minutes.
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <ShieldCheckIcon className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h3 className="card-title justify-center">Trustless & Secure</h3>
+                <p className="opacity-70">
+                  Built on Hash Time-Locked Contracts (HTLC) with no trusted intermediaries. Your funds are always
+                  secure.
                 </p>
-                <Link href="/swap" className="btn btn-primary btn-lg">
-                  Get Started
-                </Link>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <BoltIcon className="w-12 h-12 text-secondary mx-auto mb-4" />
+                <h3 className="card-title justify-center">Fast & Efficient</h3>
+                <p className="opacity-70">
+                  Optimized smart contracts with automatic XCM bridge integration. Complete swaps in minutes, not hours.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <GlobeAltIcon className="w-12 h-12 text-accent mx-auto mb-4" />
+                <h3 className="card-title justify-center">Cross-Chain Native</h3>
+                <p className="opacity-70">
+                  Direct ETH ↔ DOT swaps without wrapped tokens. True cross-chain interoperability.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <CurrencyDollarIcon className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h3 className="card-title justify-center">No Fees</h3>
+                <p className="opacity-70">No platform fees, no hidden costs. Only pay for network gas fees.</p>
+              </div>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <ClockIcon className="w-12 h-12 text-secondary mx-auto mb-4" />
+                <h3 className="card-title justify-center">Time-Locked</h3>
+                <p className="opacity-70">
+                  Configurable timeouts ensure you can always recover your funds if the other party doesn&apos;t
+                  complete the swap.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body text-center">
+                <ArrowRightIcon className="w-12 h-12 text-accent mx-auto mb-4" />
+                <h3 className="card-title justify-center">Bidirectional</h3>
+                <p className="opacity-70">Swap ETH for DOT or DOT for ETH. Full bidirectional support for all users.</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      {/* How It Works Section */}
+      <div className="py-20 px-4 bg-base-200">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Step 1 */}
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary text-primary-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                1
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Create Swap</h3>
+              <p className="opacity-70">Generate a secret and create a swap on Ethereum, locking your ETH.</p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="text-center">
+              <div className="w-16 h-16 bg-secondary text-secondary-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                2
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Counter Party</h3>
+              <p className="opacity-70">
+                Another user sees your swap and locks DOT on Polkadot with the same secret hash.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="text-center">
+              <div className="w-16 h-16 bg-accent text-accent-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                3
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Reveal Secret</h3>
+              <p className="opacity-70">
+                Claim your DOT by revealing the secret, which is automatically sent to Ethereum.
+              </p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="text-center">
+              <div className="w-16 h-16 bg-success text-success-content rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                4
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Complete</h3>
+              <p className="opacity-70">The counter party claims their ETH using the revealed secret. Swap complete!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="py-20 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Start Swapping?</h2>
+          <p className="text-lg opacity-70 mb-8">
+            Join the future of cross-chain trading with DotFusion. Secure, fast, and completely decentralized.
+          </p>
+
+          {isConnected ? (
+            <Link href="/swap" className="btn btn-primary btn-lg">
+              <BoltIcon className="w-6 h-6" />
+              Start Your First Swap
+            </Link>
+          ) : (
+            <div className="text-center">
+              <p className="text-lg mb-4">Connect your wallet to get started</p>
+              <div className="btn btn-primary btn-lg">
+                <GlobeAltIcon className="w-6 h-6" />
+                Connect Wallet
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default Home;
+export default HomePage;
