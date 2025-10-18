@@ -27,7 +27,6 @@ interface SwapFormData {
   takerEthAddress: string;
   takerPolkadotAddress: string;
   sendAmount: string; // Amount user is sending
-  exchangeRate: string; // Exchange rate (e.g., 1 ETH = 100 DOT)
   timelockHours: string;
   useConnectedAsTaker: boolean; // Use connected wallet for taker
 }
@@ -38,13 +37,8 @@ interface GeneratedSwapData {
   swapId: string;
 }
 
-// Preset rates for quick selection
-const PRESET_RATES = [
-  { label: "1:50", value: "50", description: "1 ETH = 50 DOT" },
-  { label: "1:100", value: "100", description: "1 ETH = 100 DOT" },
-  { label: "1:150", value: "150", description: "1 ETH = 150 DOT" },
-  { label: "1:200", value: "200", description: "1 ETH = 200 DOT" },
-];
+// Fixed exchange rate: 1 DOT = 0.00001 ETH (or 1 ETH = 100,000 DOT)
+const FIXED_EXCHANGE_RATE = 100000; // 1 ETH = 100,000 DOT
 
 /**
  * Swap Creation Page - Improved UX
@@ -58,7 +52,6 @@ const CreateSwapPage: NextPage = () => {
     takerEthAddress: "",
     takerPolkadotAddress: "",
     sendAmount: "",
-    exchangeRate: "100", // Default: 1 ETH = 100 DOT
     timelockHours: "12",
     useConnectedAsTaker: false,
   });
@@ -92,23 +85,22 @@ const CreateSwapPage: NextPage = () => {
     functionName: "MAX_TIMELOCK",
   });
 
-  // Auto-calculate receive amount when send amount or rate changes
+  // Auto-calculate receive amount when send amount changes
   useEffect(() => {
     const send = parseFloat(formData.sendAmount);
-    const rate = parseFloat(formData.exchangeRate);
 
-    if (send > 0 && rate > 0) {
+    if (send > 0) {
       if (formData.direction === "ETH_TO_DOT") {
         // Sending ETH, receiving DOT
-        setReceiveAmount((send * rate).toFixed(4));
+        setReceiveAmount((send * FIXED_EXCHANGE_RATE).toFixed(4));
       } else {
         // Sending DOT, receiving ETH
-        setReceiveAmount((send / rate).toFixed(6));
+        setReceiveAmount((send / FIXED_EXCHANGE_RATE).toFixed(8));
       }
     } else {
       setReceiveAmount("");
     }
-  }, [formData.sendAmount, formData.exchangeRate, formData.direction]);
+  }, [formData.sendAmount, formData.direction]);
 
   // Auto-fill taker address if using connected wallet
   useEffect(() => {
@@ -240,7 +232,6 @@ const CreateSwapPage: NextPage = () => {
         // Sending ETH, receiving DOT
         const ethAmount = formData.sendAmount;
         const dotAmount = receiveAmount;
-        const rate = parseFloat(formData.exchangeRate);
 
         await writeEthereumEscrow({
           functionName: "createSwap",
@@ -250,7 +241,7 @@ const CreateSwapPage: NextPage = () => {
             formData.takerEthAddress as `0x${string}`,
             parseEther(ethAmount),
             parseEther(dotAmount),
-            BigInt(rate * 1e18), // exchange rate with 18 decimals
+            BigInt(FIXED_EXCHANGE_RATE * 1e18), // exchange rate with 18 decimals
             BigInt(timelockSeconds),
             addressToBytes32(formData.takerPolkadotAddress),
           ],
@@ -292,7 +283,6 @@ const CreateSwapPage: NextPage = () => {
       takerEthAddress: "",
       takerPolkadotAddress: "",
       sendAmount: "",
-      exchangeRate: "100",
       timelockHours: "12",
       useConnectedAsTaker: false,
     });
@@ -357,39 +347,21 @@ const CreateSwapPage: NextPage = () => {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Exchange Rate */}
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-semibold">Exchange Rate</span>
-                    </label>
-                    <input
-                      type="number"
-                      className="input input-bordered w-full"
-                      value={formData.exchangeRate}
-                      onChange={e => setFormData({ ...formData, exchangeRate: e.target.value })}
-                      placeholder="100"
-                      step="0.01"
-                      min="0"
-                    />
-                    <label className="label">
-                      <span className="label-text-alt">1 ETH = {formData.exchangeRate || "0"} DOT</span>
-                    </label>
-
-                    {/* Preset Rates */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {PRESET_RATES.map(preset => (
-                        <button
-                          key={preset.value}
-                          className="btn btn-xs btn-outline"
-                          onClick={() => setFormData({ ...formData, exchangeRate: preset.value })}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
+                {/* Fixed Exchange Rate Display */}
+                <div className="alert alert-info mb-4">
+                  <div className="flex items-center gap-2">
+                    <ArrowRightIcon className="w-5 h-5" />
+                    <div>
+                      <h4 className="font-semibold">Fixed Exchange Rate</h4>
+                      <p className="text-sm">
+                        1 ETH = {FIXED_EXCHANGE_RATE.toLocaleString()} DOT
+                        <span className="mx-2">•</span>1 DOT = {(1 / FIXED_EXCHANGE_RATE).toFixed(8)} ETH
+                      </p>
                     </div>
                   </div>
+                </div>
 
+                <div className="grid md:grid-cols-2 gap-4">
                   {/* Timelock */}
                   <div className="form-control">
                     <label className="label">
@@ -444,14 +416,7 @@ const CreateSwapPage: NextPage = () => {
                       <p className="text-lg font-bold">
                         {receiveAmount} {formData.direction === "ETH_TO_DOT" ? "DOT" : "ETH"}
                       </p>
-                      <p className="text-sm opacity-70">
-                        Rate: 1 ETH = {formData.exchangeRate} DOT
-                        {formData.exchangeRate && parseFloat(formData.exchangeRate) > 0 && (
-                          <>
-                            {" • "}1 DOT = {(1 / parseFloat(formData.exchangeRate)).toFixed(6)} ETH
-                          </>
-                        )}
-                      </p>
+                      <p className="text-sm opacity-70">At rate: 1 ETH = {FIXED_EXCHANGE_RATE.toLocaleString()} DOT</p>
                     </div>
                   </div>
                 )}
