@@ -602,7 +602,7 @@ const FastSwapPage: NextPage = () => {
                       </label>
                       <input
                         type="text"
-                        className="input input-bordered font-mono text-sm bg-base-100 focus:border-primary focus:outline-primary"
+                        className="input input-bordered font-mono text-sm bg-base-100 focus:border-primary focus:outline-primary mx-2"
                         placeholder="0x..."
                         value={customSecret}
                         onChange={e => setCustomSecret(e.target.value)}
@@ -645,13 +645,12 @@ const FastSwapPage: NextPage = () => {
 
                 {/* Create Button */}
                 <button
-                  className={`btn btn-lg w-full shadow-xl ${
-                    isCreating
-                      ? "btn-disabled loading"
-                      : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
-                        ? "btn-disabled"
-                        : "btn-primary"
-                  } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
+                  className={`btn btn-lg w-full shadow-xl ${isCreating
+                    ? "btn-disabled loading"
+                    : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
+                      ? "btn-disabled"
+                      : "btn-primary"
+                    } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
                   onClick={processSecretAndCreate}
                   disabled={
                     isCreating || !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
