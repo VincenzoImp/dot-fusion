@@ -591,7 +591,7 @@ const FastSwapPage: NextPage = () => {
                       <p className="text-sm opacity-70">Generate or enter your swap secret</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="form-control">
                       <label className="label">
@@ -605,7 +605,7 @@ const FastSwapPage: NextPage = () => {
                         className="input input-bordered font-mono text-sm bg-base-100 focus:border-primary focus:outline-primary"
                         placeholder="0x..."
                         value={customSecret}
-                        onChange={(e) => setCustomSecret(e.target.value)}
+                        onChange={e => setCustomSecret(e.target.value)}
                       />
                       <label className="label">
                         <span className="label-text-alt opacity-70 flex items-center gap-1">
@@ -645,14 +645,17 @@ const FastSwapPage: NextPage = () => {
 
                 {/* Create Button */}
                 <button
-                  className={`btn btn-lg w-full shadow-xl ${isCreating
-                    ? "btn-disabled loading"
-                    : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
-                      ? "btn-disabled"
-                      : "btn-primary"
-                    } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
+                  className={`btn btn-lg w-full shadow-xl ${
+                    isCreating
+                      ? "btn-disabled loading"
+                      : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
+                        ? "btn-disabled"
+                        : "btn-primary"
+                  } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
                   onClick={processSecretAndCreate}
-                  disabled={isCreating || !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online}
+                  disabled={
+                    isCreating || !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
+                  }
                 >
                   {isCreating ? (
                     <span className="flex items-center gap-2">

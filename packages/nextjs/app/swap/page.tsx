@@ -533,7 +533,7 @@ const CreateSwapPage: NextPage = () => {
                           className="input input-bordered font-mono text-sm bg-base-100"
                           placeholder="0x..."
                           value={customSecret}
-                          onChange={(e) => setCustomSecret(e.target.value)}
+                          onChange={e => setCustomSecret(e.target.value)}
                         />
                         <label className="label">
                           <span className="label-text-alt opacity-70">
@@ -551,11 +551,7 @@ const CreateSwapPage: NextPage = () => {
                           {!isGenerating && <KeyIcon className="w-5 h-5" />}
                           {isGenerating ? "Generating..." : "Generate Random"}
                         </button>
-                        <button
-                          className="btn btn-primary"
-                          onClick={processSecret}
-                          disabled={!customSecret}
-                        >
+                        <button className="btn btn-primary" onClick={processSecret} disabled={!customSecret}>
                           <CheckCircleIcon className="w-5 h-5" />
                           Process Secret
                         </button>
