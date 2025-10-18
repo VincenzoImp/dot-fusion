@@ -141,6 +141,29 @@ app.post("/fulfill-eth-to-dot", async (req, res) => {
     const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
     const escrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, wallet) as any;
 
+    // Check if swap already exists
+    try {
+      const existingSwap = await escrow.getSwap(swapId);
+      if (existingSwap && existingSwap.state !== 0) { // 0 = INVALID state
+        console.log(`⚠️ Swap already exists with state: ${existingSwap.state}`);
+        return res.status(400).json({
+          error: "Swap already exists",
+          swapId: swapId,
+          currentState: existingSwap.state
+        });
+      }
+    } catch (error) {
+      console.log("✅ Swap does not exist, proceeding...");
+    }
+
+    // Validate parameters before transaction
+    console.log(`📋 Transaction parameters:`);
+    console.log(`  - Swap ID: ${swapId}`);
+    console.log(`  - Secret Hash: ${secretHash}`);
+    console.log(`  - Maker: ${maker}`);
+    console.log(`  - DOT Amount: ${dotAmount} (${ethers.parseEther(dotAmount)} wei)`);
+    console.log(`  - Timelock: ${CONFIG.DOT_TIMELOCK} seconds`);
+
     // Create native swap on Paseo
     const tx = await escrow.createNativeSwap(swapId, secretHash, maker, BigInt(CONFIG.DOT_TIMELOCK), {
       value: ethers.parseEther(dotAmount),
@@ -160,9 +183,30 @@ app.post("/fulfill-eth-to-dot", async (req, res) => {
     });
   } catch (error: any) {
     console.error(`❌ Error fulfilling swap:`, error.message);
+    
+    // Try to extract more specific error information
+    let errorDetails = error.message;
+    if (error.reason) {
+      errorDetails = error.reason;
+    } else if (error.data) {
+      errorDetails = `Transaction failed: ${error.data}`;
+    }
+    
+    // Check for common revert reasons
+    if (error.message.includes("SwapAlreadyExists")) {
+      errorDetails = "Swap already exists on the blockchain";
+    } else if (error.message.includes("InvalidSecretHash")) {
+      errorDetails = "Invalid secret hash provided";
+    } else if (error.message.includes("InvalidAmount")) {
+      errorDetails = "Invalid amount provided";
+    } else if (error.message.includes("TimelockTooLong")) {
+      errorDetails = "Timelock duration exceeds maximum allowed";
+    }
+    
     res.status(500).json({
       error: "Failed to fulfill swap",
-      details: error.message,
+      details: errorDetails,
+      swapId: swapId,
     });
   }
 });
