@@ -11,6 +11,7 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 
 const HomePage: NextPage = () => {
   const { isConnected } = useAccount();
@@ -45,10 +46,7 @@ const HomePage: NextPage = () => {
               ) : (
                 <div className="text-center">
                   <p className="text-lg mb-4">Connect your wallet to get started</p>
-                  <div className="btn btn-primary btn-lg">
-                    <GlobeAltIcon className="w-6 h-6" />
-                    Connect Wallet
-                  </div>
+                  <RainbowKitCustomConnectButton />
                 </div>
               )}
             </div>
@@ -194,10 +192,7 @@ const HomePage: NextPage = () => {
           ) : (
             <div className="text-center">
               <p className="text-lg mb-4">Connect your wallet to get started</p>
-              <div className="btn btn-primary btn-lg">
-                <GlobeAltIcon className="w-6 h-6" />
-                Connect Wallet
-              </div>
+              <RainbowKitCustomConnectButton />
             </div>
           )}
         </div>

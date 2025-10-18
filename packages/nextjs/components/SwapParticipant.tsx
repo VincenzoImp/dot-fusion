@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 import {
   ArrowPathIcon,
@@ -102,7 +103,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
   });
 
   // Process available swaps
-  const availableSwaps = useState<AvailableSwap[]>(() => {
+  const availableSwaps = useMemo(() => {
     const swaps: AvailableSwap[] = [];
 
     // Process Ethereum swaps
@@ -120,7 +121,8 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
             secretHash: event.args.secretHash,
             maker: event.args.maker,
             taker: event.args.taker,
-            takerPolkadotAddress: event.args.takerPolkadotAddress,
+            takerPolkadotAddress:
+              event.args.polkadotSender || "0x0000000000000000000000000000000000000000000000000000000000000000",
             ethAmount: event.args.ethAmount,
             dotAmount: event.args.dotAmount,
             unlockTime: event.args.unlockTime,
@@ -147,9 +149,10 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
             secretHash: event.args.secretHash,
             maker: event.args.maker,
             taker: event.args.taker,
-            takerPolkadotAddress: event.args.takerPolkadotAddress,
-            ethAmount: event.args.ethAmount,
-            dotAmount: event.args.dotAmount,
+            takerPolkadotAddress:
+              event.args.polkadotSender || "0x0000000000000000000000000000000000000000000000000000000000000000",
+            ethAmount: event.args.ethAmount || event.args.amount,
+            dotAmount: event.args.dotAmount || event.args.amount,
             unlockTime: event.args.unlockTime,
             chain: "polkadot",
             blockNumber: event.blockNumber,
@@ -160,7 +163,14 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     }
 
     return swaps.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-  })[0];
+  }, [
+    ethSwapCreatedEvents,
+    ethSwapCompletedEvents,
+    ethSwapCancelledEvents,
+    dotSwapCreatedEvents,
+    dotSwapCompletedEvents,
+    dotSwapCancelledEvents,
+  ]);
 
   // Filter swaps for current user
   const userAvailableSwaps = availableSwaps.filter(
@@ -203,19 +213,29 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     try {
       if (swap.chain === "ethereum") {
         // Create matching swap on Polkadot
+        // Calculate remaining timelock duration (Polkadot swap should have shorter timelock)
+        const currentTime = Math.floor(Date.now() / 1000);
+        const remainingTime = Math.max(0, Number(swap.unlockTime) - currentTime);
+        const polkadotTimelock = Math.min(remainingTime, 6 * 3600); // Max 6 hours for Polkadot
+
         await writePolkadotEscrow({
           functionName: "createNativeSwap",
           args: [
             swap.swapId as `0x${string}`,
             swap.secretHash as `0x${string}`,
             swap.maker as `0x${string}`,
-            BigInt(swap.unlockTime),
+            BigInt(polkadotTimelock),
           ],
           value: swap.dotAmount,
         });
         notification.success("✅ DOT swap created on Polkadot!");
       } else {
         // Create matching swap on Ethereum
+        // Calculate timelock duration (Ethereum swap should have longer timelock)
+        const currentTime = Math.floor(Date.now() / 1000);
+        const remainingTime = Math.max(0, Number(swap.unlockTime) - currentTime);
+        const ethereumTimelock = Math.max(remainingTime * 2, 12 * 3600); // At least 12 hours for Ethereum
+
         await writeEthereumEscrow({
           functionName: "createSwap",
           args: [
@@ -225,7 +245,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
             swap.ethAmount,
             swap.dotAmount,
             BigInt(Math.floor((Number(swap.dotAmount) / Number(swap.ethAmount)) * 1e18)),
-            BigInt(swap.unlockTime),
+            BigInt(ethereumTimelock),
             swap.takerPolkadotAddress as `0x${string}`,
           ],
           value: swap.ethAmount,
@@ -316,9 +336,9 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
                             <h5 className="font-semibold mb-1">Amounts</h5>
                             <div className="flex items-center gap-2 text-sm">
                               <CurrencyDollarIcon className="w-4 h-4" />
-                              <span>{swap.ethAmount.toString()} ETH</span>
+                              <span>{formatEther(swap.ethAmount)} ETH</span>
                               <ArrowPathIcon className="w-4 h-4" />
-                              <span>{swap.dotAmount.toString()} DOT</span>
+                              <span>{formatEther(swap.dotAmount)} DOT</span>
                             </div>
                           </div>
 
@@ -386,12 +406,12 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{selectedSwap.ethAmount.toString()}</div>
+                      <div className="text-2xl font-bold">{formatEther(selectedSwap.ethAmount)}</div>
                       <div className="text-sm opacity-70">ETH</div>
                     </div>
                     <ArrowPathIcon className="w-6 h-6" />
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{selectedSwap.dotAmount.toString()}</div>
+                      <div className="text-2xl font-bold">{formatEther(selectedSwap.dotAmount)}</div>
                       <div className="text-sm opacity-70">DOT</div>
                     </div>
                   </div>

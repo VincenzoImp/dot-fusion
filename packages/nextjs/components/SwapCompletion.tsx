@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { encodePacked, keccak256 } from "viem";
+import { encodePacked, formatEther, keccak256 } from "viem";
 import { useAccount } from "wagmi";
 import {
   ArrowPathIcon,
@@ -185,17 +185,19 @@ export const SwapCompletion: React.FC<SwapCompletionProps> = ({ swapId, chain, o
                 <div className="text-center">
                   <div className="text-2xl font-bold">
                     {chain === "ethereum"
-                      ? (swapData as any).ethAmount?.toString()
-                      : (swapData as any).amount?.toString()}
+                      ? formatEther((swapData as any).ethAmount || 0n)
+                      : formatEther((swapData as any).amount || 0n)}
                   </div>
                   <div className="text-sm opacity-70">{chain === "ethereum" ? "ETH" : "DOT"}</div>
                 </div>
                 <ArrowPathIcon className="w-6 h-6" />
                 <div className="text-center">
                   <div className="text-2xl font-bold">
-                    {chain === "ethereum" ? (swapData as any).dotAmount?.toString() : "N/A"}
+                    {chain === "ethereum"
+                      ? formatEther((swapData as any).dotAmount || 0n)
+                      : formatEther((swapData as any).amount || 0n)}
                   </div>
-                  <div className="text-sm opacity-70">{chain === "ethereum" ? "DOT" : "N/A"}</div>
+                  <div className="text-sm opacity-70">{chain === "ethereum" ? "DOT" : "ETH"}</div>
                 </div>
               </div>
             </div>

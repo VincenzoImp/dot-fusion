@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { NextPage } from "next";
-import { encodePacked, keccak256, parseEther, stringToBytes, toHex } from "viem";
+import { encodePacked, keccak256, parseEther, toHex } from "viem";
 import { useAccount } from "wagmi";
 import {
   ArrowRightIcon,
@@ -91,24 +91,27 @@ const CreateSwapPage: NextPage = () => {
   });
 
   /**
-   * Validate Polkadot SS58 address format
+   * Validate Polkadot address format (0x format)
    * @param address Address to validate
-   * @returns true if valid SS58 format
+   * @returns true if valid 0x address format
    */
   const isValidPolkadotAddress = (address: string): boolean => {
     if (!address) return false;
-    // Basic SS58 validation: starts with number and is 47-48 characters
-    return /^[1-9A-HJ-NP-Za-km-z]{47,48}$/.test(address);
+    // Accept standard 0x Ethereum-style addresses
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
   };
 
   /**
-   * Convert Polkadot SS58 address to bytes32 by hashing it
-   * @param polkadotAddress SS58 format Polkadot address
-   * @returns bytes32 hash of the address
+   * Convert address to bytes32 (pad with zeros)
+   * @param address 0x address
+   * @returns bytes32 padded address
    */
-  const polkadotAddressToBytes32 = (polkadotAddress: string): `0x${string}` => {
-    if (!polkadotAddress) return "0x0000000000000000000000000000000000000000000000000000000000000000";
-    return keccak256(stringToBytes(polkadotAddress)) as `0x${string}`;
+  const addressToBytes32 = (address: string): `0x${string}` => {
+    if (!address || address === "0x") {
+      return "0x0000000000000000000000000000000000000000000000000000000000000000";
+    }
+    // Pad address to 32 bytes (64 hex chars) by adding zeros
+    return `0x${address.slice(2).padStart(64, "0")}` as `0x${string}`;
   };
 
   /**
@@ -175,7 +178,7 @@ const CreateSwapPage: NextPage = () => {
 
     // Validate Polkadot address format
     if (!isValidPolkadotAddress(formData.takerPolkadotAddress)) {
-      notification.error("Please enter a valid Polkadot address (SS58 format)");
+      notification.error("Please enter a valid Polkadot address (0x format)");
       return;
     }
 
@@ -218,7 +221,7 @@ const CreateSwapPage: NextPage = () => {
             parseEther(formData.dotAmount),
             BigInt((parseFloat(formData.dotAmount) / parseFloat(formData.ethAmount)) * 1e18), // exchange rate
             BigInt(timelockSeconds),
-            polkadotAddressToBytes32(formData.takerPolkadotAddress),
+            addressToBytes32(formData.takerPolkadotAddress),
           ],
           value: parseEther(formData.ethAmount),
         });
@@ -344,12 +347,10 @@ const CreateSwapPage: NextPage = () => {
                   <InputBase
                     value={formData.takerPolkadotAddress}
                     onChange={setTakerPolkadotAddress}
-                    placeholder="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+                    placeholder="0x..."
                   />
                   <label className="label">
-                    <span className="label-text-alt">
-                      Enter a valid Polkadot address in SS58 format (47-48 characters)
-                    </span>
+                    <span className="label-text-alt">Enter a valid Polkadot address (0x format, 42 characters)</span>
                   </label>
                 </div>
 
@@ -379,6 +380,26 @@ const CreateSwapPage: NextPage = () => {
                     placeholder="0.0"
                   />
                 </div>
+
+                {/* Exchange Rate Display */}
+                {formData.ethAmount &&
+                  formData.dotAmount &&
+                  parseFloat(formData.ethAmount) > 0 &&
+                  parseFloat(formData.dotAmount) > 0 && (
+                    <div className="alert alert-info mb-4">
+                      <div className="flex items-center gap-2">
+                        <ArrowRightIcon className="w-5 h-5" />
+                        <div>
+                          <h4 className="font-semibold">Exchange Rate</h4>
+                          <p className="text-sm">
+                            1 ETH = {(parseFloat(formData.dotAmount) / parseFloat(formData.ethAmount)).toFixed(4)} DOT
+                            <span className="mx-2">•</span>1 DOT ={" "}
+                            {(parseFloat(formData.ethAmount) / parseFloat(formData.dotAmount)).toFixed(6)} ETH
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 {/* Timelock */}
                 <div className="form-control mb-6">

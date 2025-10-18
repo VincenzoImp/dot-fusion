@@ -105,9 +105,8 @@ export const XCMBridgeStatus: React.FC<XCMBridgeStatusProps> = ({ className = ""
     if (!escrow || escrow === "0x0000000000000000000000000000000000000000") {
       return { status: "not-configured", color: "text-error", icon: ExclamationTriangleIcon };
     }
-    if (!ethereumEscrow || ethereumEscrow === "0x0000000000000000000000000000000000000000") {
-      return { status: "partial", color: "text-warning", icon: ClockIcon };
-    }
+    // For deployed contracts: if escrow is set, bridge is configured
+    // ethereumEscrow and ethereumParaId are optional (may be constants in older versions)
     return { status: "configured", color: "text-success", icon: CheckCircleIcon };
   };
 
@@ -152,12 +151,14 @@ export const XCMBridgeStatus: React.FC<XCMBridgeStatusProps> = ({ className = ""
               <div className="flex justify-between">
                 <span className="opacity-70">Ethereum Escrow:</span>
                 <span className="font-mono">
-                  {ethereumEscrow ? `${ethereumEscrow.slice(0, 6)}...${ethereumEscrow.slice(-4)}` : "Not Set"}
+                  {ethereumEscrow && ethereumEscrow !== "0x0000000000000000000000000000000000000000"
+                    ? `${ethereumEscrow.slice(0, 6)}...${ethereumEscrow.slice(-4)}`
+                    : "Built-in"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="opacity-70">Ethereum Para ID:</span>
-                <span>{ethereumParaId ? ethereumParaId.toString() : "Not Set"}</span>
+                <span>{ethereumParaId && ethereumParaId > 0 ? ethereumParaId.toString() : "Built-in"}</span>
               </div>
             </div>
           </div>

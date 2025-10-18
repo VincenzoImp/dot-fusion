@@ -148,7 +148,8 @@ const SwapsPage: NextPage = () => {
           secretHash: event.args.secretHash,
           maker: event.args.maker,
           taker: event.args.taker,
-          takerPolkadotAddress: event.args.polkadotSender || "",
+          takerPolkadotAddress:
+            event.args.polkadotSender || "0x0000000000000000000000000000000000000000000000000000000000000000",
           ethAmount: event.args.ethAmount,
           dotAmount: event.args.dotAmount,
           unlockTime: event.args.unlockTime,
@@ -186,9 +187,10 @@ const SwapsPage: NextPage = () => {
           secretHash: event.args.secretHash,
           maker: event.args.maker,
           taker: event.args.taker,
-          takerPolkadotAddress: event.args.polkadotSender || "",
-          ethAmount: event.args.ethAmount,
-          dotAmount: event.args.dotAmount,
+          takerPolkadotAddress:
+            event.args.polkadotSender || "0x0000000000000000000000000000000000000000000000000000000000000000",
+          ethAmount: event.args.ethAmount || 0n,
+          dotAmount: event.args.dotAmount || 0n,
           unlockTime: event.args.unlockTime,
           state: isCompleted ? "COMPLETED" : isCancelled ? "CANCELLED" : "OPEN",
           blockNumber: event.blockNumber,

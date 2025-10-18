@@ -10,6 +10,8 @@
     "check-types": "tsc --noEmit --incremental",
     "clean": "hardhat clean",
     "compile": "hardhat compile",
+    "check-bridge": "hardhat run scripts/checkBridgeStatus.ts",
+    "configure-bridge": "ts-node scripts/runConfigureWithPK.ts",
     "deploy": "ts-node scripts/runHardhatDeployWithPK.ts",
     "flatten": "hardhat flatten",
     "fork": "MAINNET_FORKING_ENABLED=true hardhat node --network hardhat --no-deploy",
@@ -18,6 +20,7 @@
     "hardhat-verify": "hardhat verify",
     "lint": "eslint",
     "lint-staged": "eslint",
+    "test-xcm": "hardhat run scripts/testXCMBridge.ts",
     "verify": "hardhat etherscan-verify"
   },
   "dependencies": {

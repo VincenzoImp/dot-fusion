@@ -186,14 +186,16 @@ const DashboardPage: NextPage = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {[...(ethSwapCreatedEvents || []), ...(dotSwapCreatedEvents || [])]
+                  {[
+                    ...(ethSwapCreatedEvents?.map(e => ({ ...e, chain: "ethereum" })) || []),
+                    ...(dotSwapCreatedEvents?.map(e => ({ ...e, chain: "polkadot" })) || []),
+                  ]
+                    .sort((a, b) => Number(b.blockNumber - a.blockNumber))
                     .slice(0, 5)
                     .map((event: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-base-300 rounded">
                         <div className="flex items-center gap-3">
-                          <div className="badge badge-outline">
-                            {event.address.includes("Ethereum") ? "ETH" : "DOT"}
-                          </div>
+                          <div className="badge badge-outline">{event.chain === "ethereum" ? "ETH" : "DOT"}</div>
                           <div>
                             <div className="font-semibold">Swap Created</div>
                             <div className="text-sm opacity-70">ID: {event.args.swapId.slice(0, 8)}...</div>
