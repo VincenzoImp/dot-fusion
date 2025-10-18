@@ -5,9 +5,9 @@
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
 const deployedContracts = {
-  11155111: {
+  31337: {
     DotFusionEthereumEscrow: {
-      address: "0x43bD6B0FDAB99a9eC9eF76C3ABB23ABa125dB154",
+      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       abi: [
         {
           inputs: [
@@ -17,40 +17,13 @@ const deployedContracts = {
               type: "uint32",
             },
             {
-              internalType: "contract IERC20",
+              internalType: "address",
               name: "_accessToken",
               type: "address",
             },
           ],
           stateMutability: "nonpayable",
           type: "constructor",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "target",
-              type: "address",
-            },
-          ],
-          name: "AddressEmptyCode",
-          type: "error",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "account",
-              type: "address",
-            },
-          ],
-          name: "AddressInsufficientBalance",
-          type: "error",
-        },
-        {
-          inputs: [],
-          name: "FailedInnerCall",
-          type: "error",
         },
         {
           inputs: [],
@@ -70,17 +43,6 @@ const deployedContracts = {
         {
           inputs: [],
           name: "InvalidSecretHash",
-          type: "error",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "token",
-              type: "address",
-            },
-          ],
-          name: "SafeERC20FailedOperation",
           type: "error",
         },
         {
@@ -124,14 +86,8 @@ const deployedContracts = {
             },
             {
               indexed: false,
-              internalType: "address",
-              name: "token",
-              type: "address",
-            },
-            {
-              indexed: false,
               internalType: "uint256",
-              name: "amount",
+              name: "ethAmount",
               type: "uint256",
             },
           ],
@@ -199,14 +155,20 @@ const deployedContracts = {
             },
             {
               indexed: false,
-              internalType: "address",
-              name: "token",
-              type: "address",
+              internalType: "uint256",
+              name: "ethAmount",
+              type: "uint256",
             },
             {
               indexed: false,
               internalType: "uint256",
-              name: "amount",
+              name: "dotAmount",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "exchangeRate",
               type: "uint256",
             },
             {
@@ -214,6 +176,12 @@ const deployedContracts = {
               internalType: "uint256",
               name: "unlockTime",
               type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "bytes32",
+              name: "polkadotSender",
+              type: "bytes32",
             },
           ],
           name: "SwapCreated",
@@ -224,7 +192,7 @@ const deployedContracts = {
           name: "accessToken",
           outputs: [
             {
-              internalType: "contract IERC20",
+              internalType: "address",
               name: "",
               type: "address",
             },
@@ -276,11 +244,6 @@ const deployedContracts = {
               name: "secret",
               type: "bytes32",
             },
-            {
-              internalType: "address",
-              name: "target",
-              type: "address",
-            },
           ],
           name: "completeSwap",
           outputs: [],
@@ -305,19 +268,29 @@ const deployedContracts = {
               type: "address",
             },
             {
-              internalType: "contract IERC20",
-              name: "token",
-              type: "address",
+              internalType: "uint256",
+              name: "ethAmount",
+              type: "uint256",
             },
             {
               internalType: "uint256",
-              name: "amount",
+              name: "dotAmount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "exchangeRate",
               type: "uint256",
             },
             {
               internalType: "uint256",
               name: "timelock",
               type: "uint256",
+            },
+            {
+              internalType: "bytes32",
+              name: "polkadotSender",
+              type: "bytes32",
             },
           ],
           name: "createSwap",
@@ -353,18 +326,18 @@ const deployedContracts = {
                   type: "address",
                 },
                 {
-                  internalType: "contract IERC20",
-                  name: "token",
-                  type: "address",
-                },
-                {
                   internalType: "uint256",
-                  name: "amount",
+                  name: "ethAmount",
                   type: "uint256",
                 },
                 {
                   internalType: "uint256",
-                  name: "safetyDeposit",
+                  name: "dotAmount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "exchangeRate",
                   type: "uint256",
                 },
                 {
@@ -380,6 +353,11 @@ const deployedContracts = {
                 {
                   internalType: "bytes32",
                   name: "swapId",
+                  type: "bytes32",
+                },
+                {
+                  internalType: "bytes32",
+                  name: "polkadotSender",
                   type: "bytes32",
                 },
               ],
@@ -493,18 +471,18 @@ const deployedContracts = {
               type: "address",
             },
             {
-              internalType: "contract IERC20",
-              name: "token",
-              type: "address",
-            },
-            {
               internalType: "uint256",
-              name: "amount",
+              name: "ethAmount",
               type: "uint256",
             },
             {
               internalType: "uint256",
-              name: "safetyDeposit",
+              name: "dotAmount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "exchangeRate",
               type: "uint256",
             },
             {
@@ -522,6 +500,11 @@ const deployedContracts = {
               name: "swapId",
               type: "bytes32",
             },
+            {
+              internalType: "bytes32",
+              name: "polkadotSender",
+              type: "bytes32",
+            },
           ],
           stateMutability: "view",
           type: "function",
@@ -532,12 +515,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9437450,
+      deployedOnBlock: 1,
     },
-  },
-  420420422: {
     DotFusionPolkadotEscrow: {
-      address: "0x83124fbd0a1Cf1ae5774fc30e8B733de1FE72751",
+      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
       abi: [
         {
           inputs: [
@@ -1095,10 +1076,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1812603,
+      deployedOnBlock: 3,
     },
     DotFusionXCMBridge: {
-      address: "0x0D865BeCD96c27D20D132465f1aC4C5c3a7d2E48",
+      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
       abi: [
         {
           inputs: [],
@@ -1293,7 +1274,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1812613,
+      deployedOnBlock: 5,
     },
   },
 } as const;
