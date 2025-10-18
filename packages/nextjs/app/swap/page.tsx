@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { NextPage } from "next";
-import { encodePacked, keccak256, parseEther, toHex } from "viem";
+import { encodePacked, keccak256, parseEther, stringToBytes, toHex } from "viem";
 import { useAccount } from "wagmi";
 import {
   ArrowRightIcon,
@@ -91,6 +91,27 @@ const CreateSwapPage: NextPage = () => {
   });
 
   /**
+   * Validate Polkadot SS58 address format
+   * @param address Address to validate
+   * @returns true if valid SS58 format
+   */
+  const isValidPolkadotAddress = (address: string): boolean => {
+    if (!address) return false;
+    // Basic SS58 validation: starts with number and is 47-48 characters
+    return /^[1-9A-HJ-NP-Za-km-z]{47,48}$/.test(address);
+  };
+
+  /**
+   * Convert Polkadot SS58 address to bytes32 by hashing it
+   * @param polkadotAddress SS58 format Polkadot address
+   * @returns bytes32 hash of the address
+   */
+  const polkadotAddressToBytes32 = (polkadotAddress: string): `0x${string}` => {
+    if (!polkadotAddress) return "0x0000000000000000000000000000000000000000000000000000000000000000";
+    return keccak256(stringToBytes(polkadotAddress)) as `0x${string}`;
+  };
+
+  /**
    * Generate cryptographically secure random secret
    */
   const generateSecret = () => {
@@ -152,6 +173,12 @@ const CreateSwapPage: NextPage = () => {
       return;
     }
 
+    // Validate Polkadot address format
+    if (!isValidPolkadotAddress(formData.takerPolkadotAddress)) {
+      notification.error("Please enter a valid Polkadot address (SS58 format)");
+      return;
+    }
+
     if (!formData.ethAmount || !formData.dotAmount) {
       notification.error("Please enter amounts");
       return;
@@ -191,7 +218,7 @@ const CreateSwapPage: NextPage = () => {
             parseEther(formData.dotAmount),
             BigInt((parseFloat(formData.dotAmount) / parseFloat(formData.ethAmount)) * 1e18), // exchange rate
             BigInt(timelockSeconds),
-            formData.takerPolkadotAddress as `0x${string}`,
+            polkadotAddressToBytes32(formData.takerPolkadotAddress),
           ],
           value: parseEther(formData.ethAmount),
         });
@@ -317,8 +344,13 @@ const CreateSwapPage: NextPage = () => {
                   <InputBase
                     value={formData.takerPolkadotAddress}
                     onChange={setTakerPolkadotAddress}
-                    placeholder="1A2B3C4D5E6F7G8H9I0J..."
+                    placeholder="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
                   />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      Enter a valid Polkadot address in SS58 format (47-48 characters)
+                    </span>
+                  </label>
                 </div>
 
                 {/* Amounts */}
