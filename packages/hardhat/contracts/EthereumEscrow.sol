@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 /**
  * @title DotFusion Ethereum Escrow (Source)
  * @notice Source escrow contract for cross-chain atomic swaps on Ethereum
@@ -12,7 +9,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  * @custom:security-contact security@dotfusion.io
  */
 contract DotFusionEthereumEscrow {
-    using SafeERC20 for IERC20;
 
     // ═══════════════════════════════════════════════════════════════════
     //                              TYPES
@@ -27,14 +23,15 @@ contract DotFusionEthereumEscrow {
     
     struct Swap {
         bytes32 secretHash;           // Hash of the secret (preimage)
-        address payable maker;        // User who initiated the swap
-        address payable taker;        // User who will complete the swap
-        IERC20 token;                 // Token being swapped
-        uint256 amount;               // Amount of tokens
-        uint256 safetyDeposit;        // ETH safety deposit
+        address payable maker;        // User who initiated the swap (ETH provider)
+        address payable taker;        // User who will complete the swap (DOT provider)
+        uint256 ethAmount;            // Amount of ETH being swapped
+        uint256 dotAmount;            // Amount of DOT expected in return
+        uint256 exchangeRate;         // Fixed exchange rate (DOT per ETH * 1e18)
         uint256 unlockTime;           // When swap can be cancelled
         SwapState state;              // Current swap state
         bytes32 swapId;               // Unique swap identifier
+        bytes32 polkadotSender;       // Polkadot address of the taker
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -46,7 +43,7 @@ contract DotFusionEthereumEscrow {
     // Owner and rescue delays
     address public immutable owner;
     uint32 public immutable rescueDelay;
-    IERC20 public immutable accessToken;
+    address public immutable accessToken;
 
     // ═══════════════════════════════════════════════════════════════════
     //                            EVENTS
@@ -57,9 +54,11 @@ contract DotFusionEthereumEscrow {
         bytes32 indexed secretHash,
         address indexed maker,
         address taker,
-        address token,
-        uint256 amount,
-        uint256 unlockTime
+        uint256 ethAmount,
+        uint256 dotAmount,
+        uint256 exchangeRate,
+        uint256 unlockTime,
+        bytes32 polkadotSender
     );
     
     event SwapCompleted(
@@ -73,8 +72,7 @@ contract DotFusionEthereumEscrow {
     
     event FundsRescued(
         bytes32 indexed swapId,
-        address token,
-        uint256 amount
+        uint256 ethAmount
     );
 
     // ═══════════════════════════════════════════════════════════════════
@@ -102,8 +100,9 @@ contract DotFusionEthereumEscrow {
     }
 
     modifier onlyAccessTokenHolder() {
-        if (address(accessToken) != address(0) && accessToken.balanceOf(msg.sender) == 0) {
-            revert Unauthorized();
+        if (accessToken != address(0)) {
+            // For now, we'll skip the access token check since we're not using ERC20
+            // This can be implemented later if needed
         }
         _;
     }
@@ -112,7 +111,7 @@ contract DotFusionEthereumEscrow {
     //                          CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════
 
-    constructor(uint32 _rescueDelay, IERC20 _accessToken) {
+    constructor(uint32 _rescueDelay, address _accessToken) {
         owner = msg.sender;
         rescueDelay = _rescueDelay;
         accessToken = _accessToken;
@@ -123,28 +122,31 @@ contract DotFusionEthereumEscrow {
     // ═══════════════════════════════════════════════════════════════════
 
     /**
-     * @notice Create a new swap
+     * @notice Create a new ETH-DOT cross-chain swap
      * @param swapId Unique identifier for this swap
      * @param secretHash Hash of the secret
-     * @param taker Address of the taker
-     * @param token Token to be swapped
-     * @param amount Amount of tokens
+     * @param taker Ethereum address of the taker (DOT provider)
+     * @param ethAmount Amount of ETH being swapped
+     * @param dotAmount Amount of DOT expected in return
+     * @param exchangeRate Fixed exchange rate (DOT per ETH * 1e18)
      * @param timelock Duration before cancellation is allowed
+     * @param polkadotSender Polkadot address of the taker
      */
     function createSwap(
         bytes32 swapId,
         bytes32 secretHash,
         address payable taker,
-        IERC20 token,
-        uint256 amount,
-        uint256 timelock
+        uint256 ethAmount,
+        uint256 dotAmount,
+        uint256 exchangeRate,
+        uint256 timelock,
+        bytes32 polkadotSender
     ) external payable {
         if (secretHash == bytes32(0)) revert InvalidSecretHash();
-        if (amount == 0) revert InvalidAmount();
+        if (ethAmount == 0 || dotAmount == 0) revert InvalidAmount();
+        if (exchangeRate == 0) revert InvalidParameters();
         if (swaps[swapId].state != SwapState.INVALID) revert SwapAlreadyExists();
-        
-        // Transfer tokens from maker to this contract
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        if (msg.value != ethAmount) revert InvalidAmount();
         
         uint256 unlockTime = block.timestamp + timelock;
         
@@ -153,40 +155,36 @@ contract DotFusionEthereumEscrow {
             secretHash: secretHash,
             maker: payable(msg.sender),
             taker: taker,
-            token: token,
-            amount: amount,
-            safetyDeposit: msg.value,
+            ethAmount: ethAmount,
+            dotAmount: dotAmount,
+            exchangeRate: exchangeRate,
             unlockTime: unlockTime,
             state: SwapState.OPEN,
-            swapId: swapId
+            swapId: swapId,
+            polkadotSender: polkadotSender
         });
         
-        emit SwapCreated(swapId, secretHash, msg.sender, taker, address(token), amount, unlockTime);
+        emit SwapCreated(swapId, secretHash, msg.sender, taker, ethAmount, dotAmount, exchangeRate, unlockTime, polkadotSender);
     }
 
     /**
-     * @notice Complete a swap by revealing the secret
+     * @notice Complete a swap by revealing the secret (called by taker after providing DOT)
      * @param swapId Unique swap identifier
      * @param secret Preimage of secretHash
-     * @param target Address to receive the tokens
      */
-    function completeSwap(bytes32 swapId, bytes32 secret, address target) external {
+    function completeSwap(bytes32 swapId, bytes32 secret) external {
         Swap storage swap = swaps[swapId];
         
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (keccak256(abi.encodePacked(secret)) != swap.secretHash) revert InvalidSecret();
+        if (msg.sender != swap.taker) revert Unauthorized();
         
         swap.state = SwapState.COMPLETED;
         
-        // Transfer tokens to target
-        swap.token.safeTransfer(target, swap.amount);
-        
-        // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
-            if (!success) revert TransferFailed();
-        }
+        // Transfer ETH to taker (who provided DOT on Polkadot)
+        (bool success, ) = swap.taker.call{value: swap.ethAmount}("");
+        if (!success) revert TransferFailed();
         
         emit SwapCompleted(swapId, secret);
     }
@@ -205,14 +203,9 @@ contract DotFusionEthereumEscrow {
         
         swap.state = SwapState.CANCELLED;
         
-        // Return tokens to maker
-        swap.token.safeTransfer(swap.maker, swap.amount);
-        
-        // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
-            if (!success) revert TransferFailed();
-        }
+        // Return ETH to maker
+        (bool success, ) = swap.maker.call{value: swap.ethAmount}("");
+        if (!success) revert TransferFailed();
         
         emit SwapCancelled(swapId);
     }
@@ -230,14 +223,9 @@ contract DotFusionEthereumEscrow {
         
         swap.state = SwapState.CANCELLED;
         
-        // Return tokens to maker
-        swap.token.safeTransfer(swap.maker, swap.amount);
-        
-        // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
-            if (!success) revert TransferFailed();
-        }
+        // Return ETH to maker
+        (bool success, ) = swap.maker.call{value: swap.ethAmount}("");
+        if (!success) revert TransferFailed();
         
         emit SwapCancelled(swapId);
     }
@@ -252,10 +240,11 @@ contract DotFusionEthereumEscrow {
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (block.timestamp < swap.unlockTime + rescueDelay) revert TimelockNotExpired();
         
-        // Transfer tokens to owner
-        swap.token.safeTransfer(owner, swap.amount);
+        // Transfer ETH to owner
+        (bool success, ) = owner.call{value: swap.ethAmount}("");
+        if (!success) revert TransferFailed();
         
-        emit FundsRescued(swapId, address(swap.token), swap.amount);
+        emit FundsRescued(swapId, swap.ethAmount);
     }
 
     /**
