@@ -27,55 +27,55 @@ app.use(express.json());
 
 // Configuration
 const CONFIG = {
-  EXCHANGE_RATE: 100000, // 1 ETH = 100,000 DOT
-  MIN_ETH_AMOUNT: "0.00001",
-  MIN_DOT_AMOUNT: "1",
-  ETH_TIMELOCK: 12 * 3600,
-  DOT_TIMELOCK: 6 * 3600,
+    EXCHANGE_RATE: 100000, // 1 ETH = 100,000 DOT
+    MIN_ETH_AMOUNT: "0.00001",
+    MIN_DOT_AMOUNT: "1",
+    ETH_TIMELOCK: 12 * 3600,
+    DOT_TIMELOCK: 6 * 3600,
 
-  RESOLVER_ADDRESS: process.env.RESOLVER_ADDRESS || "",
-  RESOLVER_PRIVATE_KEY: process.env.RESOLVER_PRIVATE_KEY || "",
+    RESOLVER_ADDRESS: process.env.RESOLVER_ADDRESS || "",
+    RESOLVER_PRIVATE_KEY: process.env.RESOLVER_PRIVATE_KEY || "",
 
-  // Use the SAME RPC endpoints as the frontend!
-  SEPOLIA_RPC: process.env.SEPOLIA_RPC || "https://eth-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF",
-  // Paseo RPC - use the same endpoint as hardhat config
-  PASEO_RPC: process.env.PASEO_RPC || "https://testnet-passet-hub-eth-rpc.polkadot.io",
+    // Use the SAME RPC endpoints as the frontend!
+    SEPOLIA_RPC: process.env.SEPOLIA_RPC || "https://eth-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF",
+    // Paseo RPC - use the same endpoint as hardhat config
+    PASEO_RPC: process.env.PASEO_RPC || "https://testnet-passet-hub-eth-rpc.polkadot.io",
 
-  SEPOLIA_ESCROW: "0xC8FE57b90fE5F31b8d3A4b9bC880354Ba00Ed78F",
-  PASEO_ESCROW: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
+    SEPOLIA_ESCROW: "0xC8FE57b90fE5F31b8d3A4b9bC880354Ba00Ed78F",
+    PASEO_ESCROW: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
 };
 
 // Helper to create provider with static network (skips detection)
 function createProvider(rpc: string, chainId?: number): ethers.JsonRpcProvider {
-  // For Paseo, create a custom network
-  if (chainId) {
-    const network = ethers.Network.from({
-      name: "paseo",
-      chainId: chainId,
-    });
-    return new ethers.JsonRpcProvider(rpc, network, { staticNetwork: true });
-  }
+    // For Paseo, create a custom network
+    if (chainId) {
+        const network = ethers.Network.from({
+            name: "paseo",
+            chainId: chainId,
+        });
+        return new ethers.JsonRpcProvider(rpc, network, { staticNetwork: true });
+    }
 
-  // For other networks, use default configuration
-  return new ethers.JsonRpcProvider(rpc, undefined, { staticNetwork: true });
+    // For other networks, use default configuration
+    return new ethers.JsonRpcProvider(rpc, undefined, { staticNetwork: true });
 }
 
 // Contract ABI (minimal)
 const ESCROW_ABI = [
-  "function createSwap(bytes32 swapId, bytes32 secretHash, address payable taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 timelock, bytes32 polkadotSender) external payable",
-  "function createNativeSwap(bytes32 swapId, bytes32 secretHash, address payable maker, uint256 timelock) external payable",
-  "function completeSwap(bytes32 swapId, bytes32 secret) external",
-  "function completeSwap(bytes32 swapId, bytes32 secret, address target) external",
-  "event SwapCompleted(bytes32 indexed swapId, bytes32 secret)",
-  "function getSwap(bytes32 swapId) external view returns (tuple(bytes32 secretHash, address maker, address taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 unlockTime, uint8 state, bytes32 swapId, bytes32 polkadotSender))",
+    "function createSwap(bytes32 swapId, bytes32 secretHash, address payable taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 timelock, bytes32 polkadotSender) external payable",
+    "function createNativeSwap(bytes32 swapId, bytes32 secretHash, address payable maker, uint256 timelock) external payable",
+    "function completeSwap(bytes32 swapId, bytes32 secret) external",
+    "function completeSwap(bytes32 swapId, bytes32 secret, address target) external",
+    "event SwapCompleted(bytes32 indexed swapId, bytes32 secret)",
+    "function getSwap(bytes32 swapId) external view returns (tuple(bytes32 secretHash, address maker, address taker, uint256 ethAmount, uint256 dotAmount, uint256 exchangeRate, uint256 unlockTime, uint8 state, bytes32 swapId, bytes32 polkadotSender))",
 ];
 
 // Helper function
 function addressToBytes32(address: string): string {
-  if (!address || address === "0x") {
-    return "0x0000000000000000000000000000000000000000000000000000000000000000";
-  }
-  return `0x${address.slice(2).padStart(64, "0")}`;
+    if (!address || address === "0x") {
+        return "0x0000000000000000000000000000000000000000000000000000000000000000";
+    }
+    return `0x${address.slice(2).padStart(64, "0")}`;
 }
 
 /**
@@ -83,24 +83,24 @@ function addressToBytes32(address: string): string {
  * Check if resolver is online and get basic info
  */
 app.get("/status", (req, res) => {
-  res.json({
-    status: "online",
-    resolverAddress: CONFIG.RESOLVER_ADDRESS,
-    exchangeRate: {
-      ethToDot: CONFIG.EXCHANGE_RATE,
-      dotToEth: 1 / CONFIG.EXCHANGE_RATE,
-      description: `1 ETH = ${CONFIG.EXCHANGE_RATE.toLocaleString()} DOT`,
-    },
-    minimumAmounts: {
-      eth: CONFIG.MIN_ETH_AMOUNT,
-      dot: CONFIG.MIN_DOT_AMOUNT,
-    },
-    timelocks: {
-      ethSide: "12 hours",
-      dotSide: "6 hours",
-    },
-    timestamp: new Date().toISOString(),
-  });
+    res.json({
+        status: "online",
+        resolverAddress: CONFIG.RESOLVER_ADDRESS,
+        exchangeRate: {
+            ethToDot: CONFIG.EXCHANGE_RATE,
+            dotToEth: 1 / CONFIG.EXCHANGE_RATE,
+            description: `1 ETH = ${CONFIG.EXCHANGE_RATE.toLocaleString()} DOT`,
+        },
+        minimumAmounts: {
+            eth: CONFIG.MIN_ETH_AMOUNT,
+            dot: CONFIG.MIN_DOT_AMOUNT,
+        },
+        timelocks: {
+            ethSide: "12 hours",
+            dotSide: "6 hours",
+        },
+        timestamp: new Date().toISOString(),
+    });
 });
 
 /**
@@ -117,98 +117,100 @@ app.get("/status", (req, res) => {
  * }
  */
 app.post("/fulfill-eth-to-dot", async (req, res) => {
-  try {
-    const { swapId, secretHash, maker, ethAmount, dotAmount } = req.body;
-
-    // Validate input
-    if (!swapId || !secretHash || !maker || !ethAmount || !dotAmount) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Validate amounts
-    const ethAmountFloat = parseFloat(ethAmount);
-    if (ethAmountFloat < parseFloat(CONFIG.MIN_ETH_AMOUNT)) {
-      return res.status(400).json({ error: "ETH amount below minimum" });
-    }
-
-    console.log(`\n🔄 Fulfilling ETH→DOT swap:`);
-    console.log(`Swap ID: ${swapId}`);
-    console.log(`Maker: ${maker}`);
-    console.log(`ETH: ${ethAmount}, DOT: ${dotAmount}`);
-
-    // Connect to Paseo
-    const provider = createProvider(CONFIG.PASEO_RPC, 420420422);
-    const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
-    const escrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, wallet) as any;
-
-    // Check if swap already exists
+    let swapId: string = "";
     try {
-      const existingSwap = await escrow.getSwap(swapId);
-      if (existingSwap && existingSwap.state !== 0) { // 0 = INVALID state
-        console.log(`⚠️ Swap already exists with state: ${existingSwap.state}`);
-        return res.status(400).json({
-          error: "Swap already exists",
-          swapId: swapId,
-          currentState: existingSwap.state
+        const { swapId: requestSwapId, secretHash, maker, ethAmount, dotAmount } = req.body;
+        swapId = requestSwapId;
+
+        // Validate input
+        if (!swapId || !secretHash || !maker || !ethAmount || !dotAmount) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Validate amounts
+        const ethAmountFloat = parseFloat(ethAmount);
+        if (ethAmountFloat < parseFloat(CONFIG.MIN_ETH_AMOUNT)) {
+            return res.status(400).json({ error: "ETH amount below minimum" });
+        }
+
+        console.log(`\n🔄 Fulfilling ETH→DOT swap:`);
+        console.log(`Swap ID: ${swapId}`);
+        console.log(`Maker: ${maker}`);
+        console.log(`ETH: ${ethAmount}, DOT: ${dotAmount}`);
+
+        // Connect to Paseo
+        const provider = createProvider(CONFIG.PASEO_RPC, 420420422);
+        const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
+        const escrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, wallet) as any;
+
+        // Check if swap already exists
+        try {
+            const existingSwap = await escrow.getSwap(swapId);
+            if (existingSwap && existingSwap.state !== 0) { // 0 = INVALID state
+                console.log(`⚠️ Swap already exists with state: ${existingSwap.state}`);
+                return res.status(400).json({
+                    error: "Swap already exists",
+                    swapId: swapId,
+                    currentState: existingSwap.state
+                });
+            }
+        } catch (error) {
+            console.log("✅ Swap does not exist, proceeding...");
+        }
+
+        // Validate parameters before transaction
+        console.log(`📋 Transaction parameters:`);
+        console.log(`  - Swap ID: ${swapId}`);
+        console.log(`  - Secret Hash: ${secretHash}`);
+        console.log(`  - Maker: ${maker}`);
+        console.log(`  - DOT Amount: ${dotAmount} (${ethers.parseEther(dotAmount)} wei)`);
+        console.log(`  - Timelock: ${CONFIG.DOT_TIMELOCK} seconds`);
+
+        // Create native swap on Paseo
+        const tx = await escrow.createNativeSwap(swapId, secretHash, maker, BigInt(CONFIG.DOT_TIMELOCK), {
+            value: ethers.parseEther(dotAmount),
         });
-      }
-    } catch (error) {
-      console.log("✅ Swap does not exist, proceeding...");
+
+        console.log(`✅ Transaction sent: ${tx.hash}`);
+
+        // Wait for confirmation
+        const receipt = await tx.wait();
+        console.log(`✅ Confirmed in block: ${receipt.blockNumber}`);
+
+        res.json({
+            success: true,
+            txHash: tx.hash,
+            blockNumber: receipt.blockNumber,
+            message: "DOT swap created on Paseo",
+        });
+    } catch (error: any) {
+        console.error(`❌ Error fulfilling swap:`, error.message);
+
+        // Try to extract more specific error information
+        let errorDetails = error.message;
+        if (error.reason) {
+            errorDetails = error.reason;
+        } else if (error.data) {
+            errorDetails = `Transaction failed: ${error.data}`;
+        }
+
+        // Check for common revert reasons
+        if (error.message.includes("SwapAlreadyExists")) {
+            errorDetails = "Swap already exists on the blockchain";
+        } else if (error.message.includes("InvalidSecretHash")) {
+            errorDetails = "Invalid secret hash provided";
+        } else if (error.message.includes("InvalidAmount")) {
+            errorDetails = "Invalid amount provided";
+        } else if (error.message.includes("TimelockTooLong")) {
+            errorDetails = "Timelock duration exceeds maximum allowed";
+        }
+
+        res.status(500).json({
+            error: "Failed to fulfill swap",
+            details: errorDetails,
+            swapId: swapId,
+        });
     }
-
-    // Validate parameters before transaction
-    console.log(`📋 Transaction parameters:`);
-    console.log(`  - Swap ID: ${swapId}`);
-    console.log(`  - Secret Hash: ${secretHash}`);
-    console.log(`  - Maker: ${maker}`);
-    console.log(`  - DOT Amount: ${dotAmount} (${ethers.parseEther(dotAmount)} wei)`);
-    console.log(`  - Timelock: ${CONFIG.DOT_TIMELOCK} seconds`);
-
-    // Create native swap on Paseo
-    const tx = await escrow.createNativeSwap(swapId, secretHash, maker, BigInt(CONFIG.DOT_TIMELOCK), {
-      value: ethers.parseEther(dotAmount),
-    });
-
-    console.log(`✅ Transaction sent: ${tx.hash}`);
-
-    // Wait for confirmation
-    const receipt = await tx.wait();
-    console.log(`✅ Confirmed in block: ${receipt.blockNumber}`);
-
-    res.json({
-      success: true,
-      txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
-      message: "DOT swap created on Paseo",
-    });
-  } catch (error: any) {
-    console.error(`❌ Error fulfilling swap:`, error.message);
-    
-    // Try to extract more specific error information
-    let errorDetails = error.message;
-    if (error.reason) {
-      errorDetails = error.reason;
-    } else if (error.data) {
-      errorDetails = `Transaction failed: ${error.data}`;
-    }
-    
-    // Check for common revert reasons
-    if (error.message.includes("SwapAlreadyExists")) {
-      errorDetails = "Swap already exists on the blockchain";
-    } else if (error.message.includes("InvalidSecretHash")) {
-      errorDetails = "Invalid secret hash provided";
-    } else if (error.message.includes("InvalidAmount")) {
-      errorDetails = "Invalid amount provided";
-    } else if (error.message.includes("TimelockTooLong")) {
-      errorDetails = "Timelock duration exceeds maximum allowed";
-    }
-    
-    res.status(500).json({
-      error: "Failed to fulfill swap",
-      details: errorDetails,
-      swapId: swapId,
-    });
-  }
 });
 
 /**
@@ -224,66 +226,66 @@ app.post("/fulfill-eth-to-dot", async (req, res) => {
  * }
  */
 app.post("/fulfill-dot-to-eth", async (req, res) => {
-  try {
-    const { swapId, secretHash, taker, dotAmount } = req.body;
+    try {
+        const { swapId, secretHash, taker, dotAmount } = req.body;
 
-    // Validate input
-    if (!swapId || !secretHash || !taker || !dotAmount) {
-      return res.status(400).json({ error: "Missing required fields" });
+        // Validate input
+        if (!swapId || !secretHash || !taker || !dotAmount) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Validate amounts
+        const dotAmountFloat = parseFloat(dotAmount);
+        if (dotAmountFloat < parseFloat(CONFIG.MIN_DOT_AMOUNT)) {
+            return res.status(400).json({ error: "DOT amount below minimum" });
+        }
+
+        // Calculate ETH amount
+        const ethAmount = (dotAmountFloat / CONFIG.EXCHANGE_RATE).toFixed(18);
+
+        console.log(`\n🔄 Fulfilling DOT→ETH swap:`);
+        console.log(`Swap ID: ${swapId}`);
+        console.log(`Taker: ${taker}`);
+        console.log(`DOT: ${dotAmount}, ETH: ${ethAmount}`);
+
+        // Connect to Sepolia
+        const provider = createProvider(CONFIG.SEPOLIA_RPC);
+        const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
+        const escrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, wallet) as any;
+
+        // Create swap on Sepolia
+        const tx = await escrow.createSwap(
+            swapId,
+            secretHash,
+            taker,
+            ethers.parseEther(ethAmount),
+            ethers.parseEther(dotAmount),
+            BigInt(CONFIG.EXCHANGE_RATE * 1e18),
+            BigInt(CONFIG.ETH_TIMELOCK),
+            addressToBytes32(CONFIG.RESOLVER_ADDRESS),
+            { value: ethers.parseEther(ethAmount) },
+        );
+
+        console.log(`✅ Transaction sent: ${tx.hash}`);
+
+        // Wait for confirmation
+        const receipt = await tx.wait();
+        console.log(`✅ Confirmed in block: ${receipt.blockNumber}`);
+
+        res.json({
+            success: true,
+            txHash: tx.hash,
+            blockNumber: receipt.blockNumber,
+            ethAmount,
+            message: "ETH swap created on Sepolia",
+        });
+    } catch (error: any) {
+        console.error(`❌ Error fulfilling swap:`, error.message);
+        res.status(500).json({
+            error: "Failed to fulfill swap",
+            details: error.message,
+        });
     }
-
-    // Validate amounts
-    const dotAmountFloat = parseFloat(dotAmount);
-    if (dotAmountFloat < parseFloat(CONFIG.MIN_DOT_AMOUNT)) {
-      return res.status(400).json({ error: "DOT amount below minimum" });
-    }
-
-    // Calculate ETH amount
-    const ethAmount = (dotAmountFloat / CONFIG.EXCHANGE_RATE).toFixed(18);
-
-    console.log(`\n🔄 Fulfilling DOT→ETH swap:`);
-    console.log(`Swap ID: ${swapId}`);
-    console.log(`Taker: ${taker}`);
-    console.log(`DOT: ${dotAmount}, ETH: ${ethAmount}`);
-
-    // Connect to Sepolia
-    const provider = createProvider(CONFIG.SEPOLIA_RPC);
-    const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
-    const escrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, wallet) as any;
-
-    // Create swap on Sepolia
-    const tx = await escrow.createSwap(
-      swapId,
-      secretHash,
-      taker,
-      ethers.parseEther(ethAmount),
-      ethers.parseEther(dotAmount),
-      BigInt(CONFIG.EXCHANGE_RATE * 1e18),
-      BigInt(CONFIG.ETH_TIMELOCK),
-      addressToBytes32(CONFIG.RESOLVER_ADDRESS),
-      { value: ethers.parseEther(ethAmount) },
-    );
-
-    console.log(`✅ Transaction sent: ${tx.hash}`);
-
-    // Wait for confirmation
-    const receipt = await tx.wait();
-    console.log(`✅ Confirmed in block: ${receipt.blockNumber}`);
-
-    res.json({
-      success: true,
-      txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
-      ethAmount,
-      message: "ETH swap created on Sepolia",
-    });
-  } catch (error: any) {
-    console.error(`❌ Error fulfilling swap:`, error.message);
-    res.status(500).json({
-      error: "Failed to fulfill swap",
-      details: error.message,
-    });
-  }
 });
 
 /**
@@ -291,29 +293,29 @@ app.post("/fulfill-dot-to-eth", async (req, res) => {
  * Check resolver balances on both chains
  */
 app.get("/balance", async (req, res) => {
-  try {
-    const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
-    const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
+    try {
+        const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
+        const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
 
-    const sepoliaBalance = await sepoliaProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
-    const paseoBalance = await paseoProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
+        const sepoliaBalance = await sepoliaProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
+        const paseoBalance = await paseoProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
 
-    res.json({
-      resolverAddress: CONFIG.RESOLVER_ADDRESS,
-      balances: {
-        sepolia: {
-          wei: sepoliaBalance.toString(),
-          eth: ethers.formatEther(sepoliaBalance),
-        },
-        paseo: {
-          wei: paseoBalance.toString(),
-          dot: ethers.formatEther(paseoBalance),
-        },
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+        res.json({
+            resolverAddress: CONFIG.RESOLVER_ADDRESS,
+            balances: {
+                sepolia: {
+                    wei: sepoliaBalance.toString(),
+                    eth: ethers.formatEther(sepoliaBalance),
+                },
+                paseo: {
+                    wei: paseoBalance.toString(),
+                    dot: ethers.formatEther(paseoBalance),
+                },
+            },
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /**
@@ -322,63 +324,63 @@ app.get("/balance", async (req, res) => {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function setupAutoClaimListeners() {
-  try {
-    console.log("\n🔔 Setting up auto-claim listeners...");
+    try {
+        console.log("\n🔔 Setting up auto-claim listeners...");
 
-    const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
-    const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
+        const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
+        const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
 
-    const sepoliaWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, sepoliaProvider);
-    const paseoWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, paseoProvider);
+        const sepoliaWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, sepoliaProvider);
+        const paseoWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, paseoProvider);
 
-    const sepoliaEscrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, sepoliaWallet);
-    const paseoEscrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, paseoWallet);
+        const sepoliaEscrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, sepoliaWallet);
+        const paseoEscrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, paseoWallet);
 
-    // Listen for SwapCompleted events on Polkadot (user claimed DOT)
-    // → Resolver should claim ETH on Ethereum
-    paseoEscrow.on("SwapCompleted", async (swapId: string, secret: string) => {
-      console.log(`\n🔔 User claimed DOT on Polkadot! Swap ID: ${swapId}`);
-      console.log(`Secret revealed: ${secret}`);
-      console.log(`→ Claiming ETH on Ethereum...`);
+        // Listen for SwapCompleted events on Polkadot (user claimed DOT)
+        // → Resolver should claim ETH on Ethereum
+        paseoEscrow.on("SwapCompleted", async (swapId: string, secret: string) => {
+            console.log(`\n🔔 User claimed DOT on Polkadot! Swap ID: ${swapId}`);
+            console.log(`Secret revealed: ${secret}`);
+            console.log(`→ Claiming ETH on Ethereum...`);
 
-      try {
-        const tx = await sepoliaEscrow.completeSwap(swapId, secret);
-        console.log(`✅ Resolver claimed ETH! TX: ${tx.hash}`);
-        await tx.wait();
-        console.log(`✅ Confirmed in block`);
-      } catch (error: any) {
-        console.error(`❌ Failed to claim ETH:`, error.message);
-      }
-    });
+            try {
+                const tx = await sepoliaEscrow.completeSwap(swapId, secret);
+                console.log(`✅ Resolver claimed ETH! TX: ${tx.hash}`);
+                await tx.wait();
+                console.log(`✅ Confirmed in block`);
+            } catch (error: any) {
+                console.error(`❌ Failed to claim ETH:`, error.message);
+            }
+        });
 
-    // Listen for SwapCompleted events on Ethereum (user claimed ETH)
-    // → Resolver should claim DOT on Polkadot
-    sepoliaEscrow.on("SwapCompleted", async (swapId: string, secret: string) => {
-      console.log(`\n🔔 User claimed ETH on Ethereum! Swap ID: ${swapId}`);
-      console.log(`Secret revealed: ${secret}`);
-      console.log(`→ Claiming DOT on Polkadot...`);
+        // Listen for SwapCompleted events on Ethereum (user claimed ETH)
+        // → Resolver should claim DOT on Polkadot
+        sepoliaEscrow.on("SwapCompleted", async (swapId: string, secret: string) => {
+            console.log(`\n🔔 User claimed ETH on Ethereum! Swap ID: ${swapId}`);
+            console.log(`Secret revealed: ${secret}`);
+            console.log(`→ Claiming DOT on Polkadot...`);
 
-      try {
-        // For Polkadot, we need to pass the resolver's address as the target
-        const tx = await paseoEscrow["completeSwap(bytes32,bytes32,address)"](swapId, secret, CONFIG.RESOLVER_ADDRESS);
-        console.log(`✅ Resolver claimed DOT! TX: ${tx.hash}`);
-        await tx.wait();
-        console.log(`✅ Confirmed in block`);
-      } catch (error: any) {
-        console.error(`❌ Failed to claim DOT:`, error.message);
-      }
-    });
+            try {
+                // For Polkadot, we need to pass the resolver's address as the target
+                const tx = await paseoEscrow["completeSwap(bytes32,bytes32,address)"](swapId, secret, CONFIG.RESOLVER_ADDRESS);
+                console.log(`✅ Resolver claimed DOT! TX: ${tx.hash}`);
+                await tx.wait();
+                console.log(`✅ Confirmed in block`);
+            } catch (error: any) {
+                console.error(`❌ Failed to claim DOT:`, error.message);
+            }
+        });
 
-    console.log("✅ Auto-claim listeners active on both chains!");
-  } catch (error: any) {
-    console.error("❌ Failed to setup auto-claim listeners:", error.message);
-    console.error("⚠️  Resolver will NOT automatically claim funds!");
-  }
+        console.log("✅ Auto-claim listeners active on both chains!");
+    } catch (error: any) {
+        console.error("❌ Failed to setup auto-claim listeners:", error.message);
+        console.error("⚠️  Resolver will NOT automatically claim funds!");
+    }
 }
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`
+    console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║              🚀 DotFusion Resolver API 🚀                     ║
 ╚═══════════════════════════════════════════════════════════════╝
@@ -399,16 +401,16 @@ app.listen(PORT, async () => {
 📡 Ready to receive swap requests!
   `);
 
-  if (!CONFIG.RESOLVER_ADDRESS || !CONFIG.RESOLVER_PRIVATE_KEY) {
-    console.error(`
+    if (!CONFIG.RESOLVER_ADDRESS || !CONFIG.RESOLVER_PRIVATE_KEY) {
+        console.error(`
 ⚠️  WARNING: RESOLVER_ADDRESS and RESOLVER_PRIVATE_KEY not set in .env!
 The API is running but won't be able to fulfill swaps.
     `);
-  } else {
-    // Setup auto-claim listeners (temporarily disabled due to RPC compatibility issues)
-    // await setupAutoClaimListeners();
-    console.log("⚠️  Auto-claim listeners disabled - RPC endpoints may not support event filtering");
-  }
+    } else {
+        // Setup auto-claim listeners (temporarily disabled due to RPC compatibility issues)
+        // await setupAutoClaimListeners();
+        console.log("⚠️  Auto-claim listeners disabled - RPC endpoints may not support event filtering");
+    }
 });
 
 export default app;
