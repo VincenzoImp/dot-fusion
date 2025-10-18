@@ -20,13 +20,14 @@ import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth";
 const HomePage: NextPage = () => {
   const { address: connectedAddress, isConnected } = useAccount();
 
-  // Fetch swap statistics
+  // Fetch swap statistics from both networks
   const { data: ethSwapCreatedEvents } = useScaffoldEventHistory({
     contractName: "DotFusionEthereumEscrow",
     eventName: "SwapCreated",
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 11155111, // Sepolia
   });
 
   const { data: dotSwapCreatedEvents } = useScaffoldEventHistory({
@@ -35,6 +36,7 @@ const HomePage: NextPage = () => {
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 420420422, // Paseo
   });
 
   const { data: ethSwapCompletedEvents } = useScaffoldEventHistory({
@@ -43,6 +45,7 @@ const HomePage: NextPage = () => {
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 11155111, // Sepolia
   });
 
   const { data: dotSwapCompletedEvents } = useScaffoldEventHistory({
@@ -51,6 +54,7 @@ const HomePage: NextPage = () => {
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 420420422, // Paseo
   });
 
   // Calculate statistics

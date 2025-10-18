@@ -8,9 +8,9 @@ export type SwapStage =
     | "INITIATED"           // User created swap
     | "RESOLVER_MATCHED"    // Resolver matched on other chain
     | "USER_CLAIMING"       // User is claiming their funds
-    | "USER_CLAIMED"        // User successfully claimed
     | "RESOLVER_CLAIMING"   // Resolver is claiming
-    | "COMPLETED"           // Both parties claimed
+    | "USER_CLAIMED"        // Legacy: User successfully claimed (treated as COMPLETED)
+    | "COMPLETED"           // Swap completed (user claimed their funds)
     | "FAILED"             // Swap failed
     | "REFUNDED";          // Swap was refunded
 
@@ -226,19 +226,20 @@ export function getStageInfo(stage: SwapStage): {
                 color: "warning",
                 icon: "⏳",
             };
-        case "USER_CLAIMED":
-            return {
-                label: "Claimed",
-                description: "You claimed your funds successfully",
-                color: "success",
-                icon: "✅",
-            };
         case "RESOLVER_CLAIMING":
             return {
                 label: "Finalizing",
                 description: "Resolver is claiming their funds",
                 color: "warning",
                 icon: "⏳",
+            };
+        case "USER_CLAIMED":
+            // Legacy stage - treat as completed
+            return {
+                label: "Completed",
+                description: "Swap completed successfully!",
+                color: "success",
+                icon: "🎉",
             };
         case "COMPLETED":
             return {

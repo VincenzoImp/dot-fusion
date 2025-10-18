@@ -53,13 +53,14 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     contractName: "DotFusionPolkadotEscrow",
   });
 
-  // Fetch available swaps
+  // Fetch available swaps from both networks
   const { data: ethSwapCreatedEvents, isLoading: isLoadingEth } = useScaffoldEventHistory({
     contractName: "DotFusionEthereumEscrow",
     eventName: "SwapCreated",
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 11155111, // Sepolia
   });
 
   const { data: dotSwapCreatedEvents, isLoading: isLoadingDot } = useScaffoldEventHistory({
@@ -68,6 +69,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 420420422, // Paseo
   });
 
   const { data: ethSwapCompletedEvents } = useScaffoldEventHistory({
@@ -76,6 +78,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 11155111, // Sepolia
   });
 
   const { data: dotSwapCompletedEvents } = useScaffoldEventHistory({
@@ -84,6 +87,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 420420422, // Paseo
   });
 
   const { data: ethSwapCancelledEvents } = useScaffoldEventHistory({
@@ -92,6 +96,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 11155111, // Sepolia
   });
 
   const { data: dotSwapCancelledEvents } = useScaffoldEventHistory({
@@ -100,6 +105,7 @@ export const SwapParticipant: React.FC<SwapParticipantProps> = ({ className = ""
     fromBlock: 0n,
     watch: true,
     filters: {},
+    chainId: 420420422, // Paseo
   });
 
   // Process available swaps

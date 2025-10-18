@@ -37,19 +37,27 @@ const CONFIG = {
     RESOLVER_PRIVATE_KEY: process.env.RESOLVER_PRIVATE_KEY || "",
 
     // Use the SAME RPC endpoints as the frontend!
-    SEPOLIA_RPC: process.env.SEPOLIA_RPC || "https://ethereum-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF",
-    // Paseo RPC - same as frontend (note: "passet" is correct, it's the actual URL)
+    SEPOLIA_RPC: process.env.SEPOLIA_RPC || "https://eth-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF",
+    // Paseo RPC - use the same endpoint as hardhat config
     PASEO_RPC: process.env.PASEO_RPC || "https://testnet-passet-hub-eth-rpc.polkadot.io",
 
-    SEPOLIA_ESCROW: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
-    PASEO_ESCROW: "0xc84E1a9A1772251CA228F34d0af5040B94C7083c",
+    SEPOLIA_ESCROW: "0xC8FE57b90fE5F31b8d3A4b9bC880354Ba00Ed78F",
+    PASEO_ESCROW: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
 };
 
 // Helper to create provider with static network (skips detection)
-function createProvider(rpc: string): ethers.JsonRpcProvider {
-    return new ethers.JsonRpcProvider(rpc, undefined, {
-        staticNetwork: true, // Skip network detection
-    });
+function createProvider(rpc: string, chainId?: number): ethers.JsonRpcProvider {
+    // For Paseo, create a custom network
+    if (chainId) {
+        const network = ethers.Network.from({
+            name: "paseo",
+            chainId: chainId,
+        });
+        return new ethers.JsonRpcProvider(rpc, network, { staticNetwork: true });
+    }
+
+    // For other networks, use default configuration
+    return new ethers.JsonRpcProvider(rpc, undefined, { staticNetwork: true });
 }
 
 // Contract ABI (minimal)
@@ -129,7 +137,7 @@ app.post("/fulfill-eth-to-dot", async (req, res) => {
         console.log(`ETH: ${ethAmount}, DOT: ${dotAmount}`);
 
         // Connect to Paseo
-        const provider = createProvider(CONFIG.PASEO_RPC);
+        const provider = createProvider(CONFIG.PASEO_RPC, 420420422);
         const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
         const escrow = new ethers.Contract(CONFIG.PASEO_ESCROW, ESCROW_ABI, wallet) as any;
 
@@ -247,7 +255,7 @@ app.post("/fulfill-dot-to-eth", async (req, res) => {
 app.get("/balance", async (req, res) => {
     try {
         const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
-        const paseoProvider = createProvider(CONFIG.PASEO_RPC);
+        const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
 
         const sepoliaBalance = await sepoliaProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
         const paseoBalance = await paseoProvider.getBalance(CONFIG.RESOLVER_ADDRESS);
@@ -278,7 +286,7 @@ async function setupAutoClaimListeners() {
         console.log("\n🔔 Setting up auto-claim listeners...");
 
         const sepoliaProvider = createProvider(CONFIG.SEPOLIA_RPC);
-        const paseoProvider = createProvider(CONFIG.PASEO_RPC);
+        const paseoProvider = createProvider(CONFIG.PASEO_RPC, 420420422);
 
         const sepoliaWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, sepoliaProvider);
         const paseoWallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, paseoProvider);
@@ -362,8 +370,9 @@ app.listen(PORT, async () => {
 The API is running but won't be able to fulfill swaps.
     `);
     } else {
-        // Setup auto-claim listeners
-        await setupAutoClaimListeners();
+        // Setup auto-claim listeners (temporarily disabled due to RPC compatibility issues)
+        // await setupAutoClaimListeners();
+        console.log("⚠️  Auto-claim listeners disabled - RPC endpoints may not support event filtering");
     }
 });
 

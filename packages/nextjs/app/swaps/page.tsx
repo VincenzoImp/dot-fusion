@@ -50,11 +50,15 @@ const MySwapsPage: NextPage = () => {
     switch (filter) {
       case "active":
         filtered = swaps.filter(
-          s => s.currentStage !== "COMPLETED" && s.currentStage !== "FAILED" && s.currentStage !== "REFUNDED",
+          s =>
+            s.currentStage !== "COMPLETED" &&
+            s.currentStage !== "USER_CLAIMED" &&
+            s.currentStage !== "FAILED" &&
+            s.currentStage !== "REFUNDED",
         );
         break;
       case "completed":
-        filtered = swaps.filter(s => s.currentStage === "COMPLETED");
+        filtered = swaps.filter(s => s.currentStage === "COMPLETED" || s.currentStage === "USER_CLAIMED");
         break;
       case "failed":
         filtered = swaps.filter(s => s.currentStage === "FAILED" || s.currentStage === "REFUNDED");
@@ -71,9 +75,13 @@ const MySwapsPage: NextPage = () => {
   const stats = useMemo(() => {
     const total = swaps.length;
     const active = swaps.filter(
-      s => s.currentStage !== "COMPLETED" && s.currentStage !== "FAILED" && s.currentStage !== "REFUNDED",
+      s =>
+        s.currentStage !== "COMPLETED" &&
+        s.currentStage !== "USER_CLAIMED" &&
+        s.currentStage !== "FAILED" &&
+        s.currentStage !== "REFUNDED",
     ).length;
-    const completed = swaps.filter(s => s.currentStage === "COMPLETED").length;
+    const completed = swaps.filter(s => s.currentStage === "COMPLETED" || s.currentStage === "USER_CLAIMED").length;
     const failed = swaps.filter(s => s.currentStage === "FAILED" || s.currentStage === "REFUNDED").length;
 
     return { total, active, completed, failed };

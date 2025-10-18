@@ -98,14 +98,11 @@ export default function SwapDetailsPage() {
       addSwapTransaction(swap.swapId, {
         txHash,
         chain: claimChain,
-        stage: "USER_CLAIMED",
+        stage: "COMPLETED",
         explorerUrl: getExplorerUrl(claimChain, txHash),
       });
 
-      notification.success("✅ Funds claimed successfully! The resolver will automatically claim their funds.");
-      notification.info("🔄 Swap will be marked as COMPLETED once the resolver claims back their funds.", {
-        duration: 8000,
-      });
+      notification.success("✅ Swap completed successfully! You have claimed your funds.");
       refreshSwap();
     } catch (error: any) {
       console.error("Error claiming funds:", error);
@@ -142,7 +139,7 @@ export default function SwapDetailsPage() {
   const canClaim =
     swap.role === "MAKER" &&
     (swap.currentStage === "RESOLVER_MATCHED" || swap.currentStage === "INITIATED") &&
-    !["USER_CLAIMED", "COMPLETED", "FAILED", "REFUNDED"].includes(swap.currentStage);
+    !["COMPLETED", "FAILED", "REFUNDED"].includes(swap.currentStage);
 
   return (
     <div className="min-h-screen bg-base-100 py-8">
