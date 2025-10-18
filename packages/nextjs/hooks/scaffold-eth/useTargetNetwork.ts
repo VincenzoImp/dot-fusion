@@ -18,7 +18,8 @@ export function useTargetNetwork(): { targetNetwork: ChainWithAttributes } {
     if (newSelectedNetwork && newSelectedNetwork.id !== targetNetwork.id) {
       setTargetNetwork({ ...newSelectedNetwork, ...NETWORKS_EXTRA_DATA[newSelectedNetwork.id] });
     }
-  }, [chain?.id, setTargetNetwork, targetNetwork.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chain?.id, setTargetNetwork]);
 
   return useMemo(() => ({ targetNetwork }), [targetNetwork]);
 }

@@ -171,8 +171,6 @@ export const useScaffoldEventHistory = <
         { blockData, transactionData, receiptData },
       );
 
-      setLastFetchedBlock(batchToBlock || blockNumber || 0n);
-
       return data;
     },
     enabled: enabled && isContractAddressAndClientReady && !isPollingActive, // Disable when polling starts
@@ -264,7 +262,15 @@ export const useScaffoldEventHistory = <
     ) {
       query.fetchNextPage();
     }
-  }, [query, isPollingActive]);
+  }, [
+    query.status,
+    query.hasNextPage,
+    query.isFetchingNextPage,
+    query.error,
+    isPollingActive,
+    query.fetchNextPage,
+    query,
+  ]);
 
   // Combine historical data from infinite query with live events from watch hook
   const historicalEvents = query.data?.pages || [];

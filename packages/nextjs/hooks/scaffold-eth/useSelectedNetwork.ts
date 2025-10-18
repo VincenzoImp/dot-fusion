@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import scaffoldConfig from "~~/scaffold.config";
 import { useGlobalState } from "~~/services/store/store";
 import { AllowedChainIds } from "~~/utils/scaffold-eth";
@@ -9,11 +10,14 @@ import { ChainWithAttributes, NETWORKS_EXTRA_DATA } from "~~/utils/scaffold-eth/
  */
 export function useSelectedNetwork(chainId?: AllowedChainIds): ChainWithAttributes {
   const globalTargetNetwork = useGlobalState(({ targetNetwork }) => targetNetwork);
-  const targetNetwork = scaffoldConfig.targetNetworks.find(targetNetwork => targetNetwork.id === chainId);
 
-  if (targetNetwork) {
-    return { ...targetNetwork, ...NETWORKS_EXTRA_DATA[targetNetwork.id] };
-  }
+  return useMemo(() => {
+    const targetNetwork = scaffoldConfig.targetNetworks.find(targetNetwork => targetNetwork.id === chainId);
 
-  return globalTargetNetwork;
+    if (targetNetwork) {
+      return { ...targetNetwork, ...NETWORKS_EXTRA_DATA[targetNetwork.id] };
+    }
+
+    return globalTargetNetwork;
+  }, [chainId, globalTargetNetwork]);
 }
