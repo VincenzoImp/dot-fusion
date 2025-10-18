@@ -48,7 +48,7 @@ const CreateSwapPage: NextPage = () => {
     takerPolkadotAddress: "",
     ethAmount: "",
     dotAmount: "",
-    timelockHours: "12",
+    timelockHours: "12", // Default to 12 hours for ETH_TO_DOT
   });
 
   // Form setters
@@ -57,6 +57,12 @@ const CreateSwapPage: NextPage = () => {
   const setEthAmount = (value: string) => setFormData({ ...formData, ethAmount: value });
   const setDotAmount = (value: string) => setFormData({ ...formData, dotAmount: value });
   const setTimelockHours = (value: string) => setFormData({ ...formData, timelockHours: value });
+
+  // Update direction and adjust default timelock
+  const setDirection = (direction: "ETH_TO_DOT" | "DOT_TO_ETH") => {
+    const defaultTimelock = direction === "ETH_TO_DOT" ? "12" : "6";
+    setFormData({ ...formData, direction, timelockHours: defaultTimelock });
+  };
 
   // Generated swap data
   const [swapData, setSwapData] = useState<GeneratedSwapData | null>(null);
@@ -74,12 +80,12 @@ const CreateSwapPage: NextPage = () => {
   });
 
   // Read contract data
-  const { data: minTimelock } = useScaffoldReadContract({
+  const { data: ethMinTimelock } = useScaffoldReadContract({
     contractName: "DotFusionEthereumEscrow",
     functionName: "MIN_TIMELOCK",
   });
 
-  const { data: maxTimelock } = useScaffoldReadContract({
+  const { data: dotMaxTimelock } = useScaffoldReadContract({
     contractName: "DotFusionPolkadotEscrow",
     functionName: "MAX_TIMELOCK",
   });
@@ -152,14 +158,22 @@ const CreateSwapPage: NextPage = () => {
     }
 
     const timelockSeconds = parseInt(formData.timelockHours) * 3600;
-    const minTimelockSeconds = minTimelock ? Number(minTimelock) : 12 * 3600;
-    const maxTimelockSeconds = maxTimelock ? Number(maxTimelock) : 7 * 24 * 3600;
 
-    if (timelockSeconds < minTimelockSeconds || timelockSeconds > maxTimelockSeconds) {
-      notification.error(
-        `Timelock must be between ${minTimelockSeconds / 3600} and ${maxTimelockSeconds / 3600} hours`,
-      );
-      return;
+    // Validate timelock based on swap direction
+    if (formData.direction === "ETH_TO_DOT") {
+      // For ETH_TO_DOT: Use Ethereum's minimum timelock (12 hours)
+      const minTimelockSeconds = ethMinTimelock ? Number(ethMinTimelock) : 12 * 3600;
+      if (timelockSeconds < minTimelockSeconds) {
+        notification.error(`Timelock must be at least ${minTimelockSeconds / 3600} hours for ETH to DOT swaps`);
+        return;
+      }
+    } else {
+      // For DOT_TO_ETH: Use Polkadot's maximum timelock (6 hours)
+      const maxTimelockSeconds = dotMaxTimelock ? Number(dotMaxTimelock) : 6 * 3600;
+      if (timelockSeconds > maxTimelockSeconds) {
+        notification.error(`Timelock must be at most ${maxTimelockSeconds / 3600} hours for DOT to ETH swaps`);
+        return;
+      }
     }
 
     setIsCreating(true);
@@ -271,7 +285,7 @@ const CreateSwapPage: NextPage = () => {
                         name="direction"
                         className="radio radio-primary"
                         checked={formData.direction === "ETH_TO_DOT"}
-                        onChange={() => setFormData({ ...formData, direction: "ETH_TO_DOT" })}
+                        onChange={() => setDirection("ETH_TO_DOT")}
                       />
                       <span className="label-text ml-2">ETH → DOT</span>
                     </label>
@@ -281,7 +295,7 @@ const CreateSwapPage: NextPage = () => {
                         name="direction"
                         className="radio radio-primary"
                         checked={formData.direction === "DOT_TO_ETH"}
-                        onChange={() => setFormData({ ...formData, direction: "DOT_TO_ETH" })}
+                        onChange={() => setDirection("DOT_TO_ETH")}
                       />
                       <span className="label-text ml-2">DOT → ETH</span>
                     </label>
@@ -348,13 +362,18 @@ const CreateSwapPage: NextPage = () => {
                     value={formData.timelockHours}
                     onChange={e => setTimelockHours(e.target.value)}
                     placeholder="12"
-                    min={minTimelock ? Number(minTimelock) / 3600 : 12}
-                    max={maxTimelock ? Number(maxTimelock) / 3600 : 168}
+                    min={
+                      formData.direction === "ETH_TO_DOT" ? (ethMinTimelock ? Number(ethMinTimelock) / 3600 : 12) : 1
+                    }
+                    max={
+                      formData.direction === "DOT_TO_ETH" ? (dotMaxTimelock ? Number(dotMaxTimelock) / 3600 : 6) : 168
+                    }
                   />
                   <label className="label">
                     <span className="label-text-alt">
-                      Min: {minTimelock ? Number(minTimelock) / 3600 : 12}h, Max:{" "}
-                      {maxTimelock ? Number(maxTimelock) / 3600 : 168}h
+                      {formData.direction === "ETH_TO_DOT"
+                        ? `Min: ${ethMinTimelock ? Number(ethMinTimelock) / 3600 : 12}h (Ethereum minimum)`
+                        : `Max: ${dotMaxTimelock ? Number(dotMaxTimelock) / 3600 : 6}h (Polkadot maximum)`}
                     </span>
                   </label>
                 </div>
