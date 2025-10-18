@@ -14,12 +14,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Address } from "~~/components/scaffold-eth";
-import {
-  SwapTrackingData,
-  getAllTrackedSwaps,
-  getUserSwaps,
-  getStageInfo,
-} from "~~/utils/swapTracking";
+import { SwapTrackingData, getStageInfo, getUserSwaps } from "~~/utils/swapTracking";
 
 type FilterType = "all" | "active" | "completed" | "failed";
 
@@ -54,20 +49,15 @@ const MySwapsPage: NextPage = () => {
 
     switch (filter) {
       case "active":
-        filtered = swaps.filter(s =>
-          s.currentStage !== "COMPLETED" &&
-          s.currentStage !== "FAILED" &&
-          s.currentStage !== "REFUNDED"
+        filtered = swaps.filter(
+          s => s.currentStage !== "COMPLETED" && s.currentStage !== "FAILED" && s.currentStage !== "REFUNDED",
         );
         break;
       case "completed":
         filtered = swaps.filter(s => s.currentStage === "COMPLETED");
         break;
       case "failed":
-        filtered = swaps.filter(s =>
-          s.currentStage === "FAILED" ||
-          s.currentStage === "REFUNDED"
-        );
+        filtered = swaps.filter(s => s.currentStage === "FAILED" || s.currentStage === "REFUNDED");
         break;
       default:
         filtered = swaps;
@@ -80,16 +70,11 @@ const MySwapsPage: NextPage = () => {
   // Calculate statistics
   const stats = useMemo(() => {
     const total = swaps.length;
-    const active = swaps.filter(s =>
-      s.currentStage !== "COMPLETED" &&
-      s.currentStage !== "FAILED" &&
-      s.currentStage !== "REFUNDED"
+    const active = swaps.filter(
+      s => s.currentStage !== "COMPLETED" && s.currentStage !== "FAILED" && s.currentStage !== "REFUNDED",
     ).length;
     const completed = swaps.filter(s => s.currentStage === "COMPLETED").length;
-    const failed = swaps.filter(s =>
-      s.currentStage === "FAILED" ||
-      s.currentStage === "REFUNDED"
-    ).length;
+    const failed = swaps.filter(s => s.currentStage === "FAILED" || s.currentStage === "REFUNDED").length;
 
     return { total, active, completed, failed };
   }, [swaps]);
@@ -160,16 +145,10 @@ const MySwapsPage: NextPage = () => {
 
         {/* Filter Tabs */}
         <div className="tabs tabs-boxed justify-center mb-8">
-          <button
-            className={`tab ${filter === "all" ? "tab-active" : ""}`}
-            onClick={() => setFilter("all")}
-          >
+          <button className={`tab ${filter === "all" ? "tab-active" : ""}`} onClick={() => setFilter("all")}>
             All ({stats.total})
           </button>
-          <button
-            className={`tab ${filter === "active" ? "tab-active" : ""}`}
-            onClick={() => setFilter("active")}
-          >
+          <button className={`tab ${filter === "active" ? "tab-active" : ""}`} onClick={() => setFilter("active")}>
             Active ({stats.active})
           </button>
           <button
@@ -178,10 +157,7 @@ const MySwapsPage: NextPage = () => {
           >
             Completed ({stats.completed})
           </button>
-          <button
-            className={`tab ${filter === "failed" ? "tab-active" : ""}`}
-            onClick={() => setFilter("failed")}
-          >
+          <button className={`tab ${filter === "failed" ? "tab-active" : ""}`} onClick={() => setFilter("failed")}>
             Failed ({stats.failed})
           </button>
         </div>
@@ -192,9 +168,7 @@ const MySwapsPage: NextPage = () => {
             <GlobeAltIcon className="w-16 h-16 text-base-content/30 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No Swaps Found</h3>
             <p className="opacity-70 mb-6">
-              {filter === "all"
-                ? "You haven't created any swaps yet."
-                : `No ${filter} swaps found.`}
+              {filter === "all" ? "You haven't created any swaps yet." : `No ${filter} swaps found.`}
             </p>
             <Link href="/swap-simple" className="btn btn-primary">
               Create Your First Swap
@@ -204,9 +178,7 @@ const MySwapsPage: NextPage = () => {
           <div className="grid gap-6">
             {filteredSwaps.map(swap => {
               const stageInfo = getStageInfo(swap.currentStage);
-              const canClaim =
-                swap.currentStage === "RESOLVER_MATCHED" &&
-                swap.role === "MAKER";
+              const canClaim = swap.currentStage === "RESOLVER_MATCHED" && swap.role === "MAKER";
 
               return (
                 <div key={swap.swapId} className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow">
@@ -223,11 +195,7 @@ const MySwapsPage: NextPage = () => {
                           <div className="badge badge-outline">
                             {swap.direction === "ETH_TO_DOT" ? "ETH → DOT" : "DOT → ETH"}
                           </div>
-                          {canClaim && (
-                            <div className="badge badge-success gap-1">
-                              ✨ Ready to Claim
-                            </div>
-                          )}
+                          {canClaim && <div className="badge badge-success gap-1">✨ Ready to Claim</div>}
                         </div>
 
                         {/* Amounts */}
@@ -267,9 +235,7 @@ const MySwapsPage: NextPage = () => {
                         {/* Transactions */}
                         {swap.transactions.length > 0 && (
                           <div>
-                            <div className="text-xs opacity-60 mb-2">
-                              Transactions: {swap.transactions.length}
-                            </div>
+                            <div className="text-xs opacity-60 mb-2">Transactions: {swap.transactions.length}</div>
                             <div className="flex gap-2 flex-wrap">
                               {swap.transactions.map((tx, idx) => (
                                 <a
@@ -289,8 +255,7 @@ const MySwapsPage: NextPage = () => {
                         {/* Metadata */}
                         <div className="flex gap-4 mt-4 text-sm opacity-70">
                           <div>
-                            <span className="font-semibold">Created:</span>{" "}
-                            {new Date(swap.createdAt).toLocaleString()}
+                            <span className="font-semibold">Created:</span> {new Date(swap.createdAt).toLocaleString()}
                           </div>
                           {swap.completedAt && (
                             <div>
@@ -312,9 +277,7 @@ const MySwapsPage: NextPage = () => {
                         </Link>
 
                         {swap.swapId && (
-                          <div className="text-xs opacity-60 text-center mt-2">
-                            ID: {swap.swapId.slice(0, 8)}...
-                          </div>
+                          <div className="text-xs opacity-60 text-center mt-2">ID: {swap.swapId.slice(0, 8)}...</div>
                         )}
                       </div>
                     </div>
@@ -330,18 +293,10 @@ const MySwapsPage: NextPage = () => {
           <div className="card-body">
             <h3 className="card-title">💡 Swap Tracking</h3>
             <div className="text-sm space-y-2">
-              <p>
-                • Your swaps are tracked locally in your browser and linked to your wallet address.
-              </p>
-              <p>
-                • Click on any swap to see detailed transaction history with explorer links.
-              </p>
-              <p>
-                • "Active" swaps need your attention to claim or may be waiting for the resolver.
-              </p>
-              <p>
-                • Keep your secret safe - you'll need it to claim your funds!
-              </p>
+              <p>• Your swaps are tracked locally in your browser and linked to your wallet address.</p>
+              <p>• Click on any swap to see detailed transaction history with explorer links.</p>
+              <p>• &quot;Active&quot; swaps need your attention to claim or may be waiting for the resolver.</p>
+              <p>• Keep your secret safe - you&apos;ll need it to claim your funds!</p>
             </div>
           </div>
         </div>

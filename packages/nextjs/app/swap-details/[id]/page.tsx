@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { formatEther } from "viem";
+import { encodePacked, keccak256 } from "viem";
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -16,8 +16,13 @@ import {
 import { Address, InputBase } from "~~/components/scaffold-eth";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { notification } from "~~/utils/scaffold-eth";
-import { SwapTrackingData, getTrackedSwap, getStageInfo, addSwapTransaction, getExplorerUrl } from "~~/utils/swapTracking";
-import { encodePacked, keccak256 } from "viem";
+import {
+    SwapTrackingData,
+    addSwapTransaction,
+    getExplorerUrl,
+    getStageInfo,
+    getTrackedSwap,
+} from "~~/utils/swapTracking";
 
 export default function SwapDetailsPage() {
     const params = useParams();
@@ -117,7 +122,7 @@ export default function SwapDetailsPage() {
                     <div className="card-body text-center">
                         <XCircleIcon className="w-16 h-16 text-error mx-auto mb-4" />
                         <h2 className="card-title justify-center">Swap Not Found</h2>
-                        <p className="opacity-70">The swap you're looking for doesn't exist or has been deleted</p>
+                        <p className="opacity-70">The swap you&apos;re looking for doesn&apos;t exist or has been deleted</p>
                         <Link href="/swaps" className="btn btn-primary mt-4">
                             <ArrowLeftIcon className="w-5 h-5" />
                             Back to My Swaps
@@ -128,17 +133,17 @@ export default function SwapDetailsPage() {
         );
     }
 
-    const stageInfo = getStageInfo(swap.currentStage);
-
-    // User can claim when:
-    // 1. Resolver has matched (fulfilled on destination chain)
-    // 2. User is the maker (initiator of Fast Swap)
-    // 3. Swap is not already claimed or completed
-    const canClaim =
-        (swap.currentStage === "RESOLVER_MATCHED" || swap.currentStage === "INITIATED") &&
-        swap.role === "MAKER" &&
-        swap.currentStage !== "USER_CLAIMED" &&
-        swap.currentStage !== "COMPLETED";
+  const stageInfo = getStageInfo(swap.currentStage);
+  
+  // User can claim when:
+  // 1. Resolver has matched (fulfilled on destination chain)  
+  // 2. User is the maker (initiator of Fast Swap)
+  // 3. Swap is not already claimed or completed
+  const canClaim =
+    swap.role === "MAKER" &&
+    (swap.currentStage === "RESOLVER_MATCHED" || 
+     swap.currentStage === "INITIATED") &&
+    !["USER_CLAIMED", "COMPLETED", "FAILED", "REFUNDED"].includes(swap.currentStage);
 
     return (
         <div className="min-h-screen bg-base-100 py-8">
@@ -173,9 +178,7 @@ export default function SwapDetailsPage() {
                                 </h2>
                                 <p className="text-lg opacity-80">{stageInfo.description}</p>
                             </div>
-                            <div className={`badge badge-lg badge-${stageInfo.color} text-lg px-6 py-4`}>
-                                {swap.currentStage}
-                            </div>
+                            <div className={`badge badge-lg badge-${stageInfo.color} text-lg px-6 py-4`}>{swap.currentStage}</div>
                         </div>
                     </div>
                 </div>
@@ -192,18 +195,14 @@ export default function SwapDetailsPage() {
                                         <div className="text-sm opacity-70">You Send</div>
                                         <div className="text-2xl font-bold">{swap.sendAmount}</div>
                                     </div>
-                                    <div className="badge badge-lg badge-primary">
-                                        {swap.direction === "ETH_TO_DOT" ? "ETH" : "DOT"}
-                                    </div>
+                                    <div className="badge badge-lg badge-primary">{swap.direction === "ETH_TO_DOT" ? "ETH" : "DOT"}</div>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-success/10 rounded-lg">
                                     <div>
                                         <div className="text-sm opacity-70">You Receive</div>
                                         <div className="text-2xl font-bold text-success">{swap.receiveAmount}</div>
                                     </div>
-                                    <div className="badge badge-lg badge-success">
-                                        {swap.direction === "ETH_TO_DOT" ? "DOT" : "ETH"}
-                                    </div>
+                                    <div className="badge badge-lg badge-success">{swap.direction === "ETH_TO_DOT" ? "DOT" : "ETH"}</div>
                                 </div>
                             </div>
                         </div>
@@ -286,9 +285,7 @@ export default function SwapDetailsPage() {
                                                 <span className="text-xl">{getStageInfo(tx.stage).icon}</span>
                                                 <div>
                                                     <div className="font-semibold">{getStageInfo(tx.stage).label}</div>
-                                                    <div className="text-sm opacity-70">
-                                                        {new Date(tx.timestamp).toLocaleString()}
-                                                    </div>
+                                                    <div className="text-sm opacity-70">{new Date(tx.timestamp).toLocaleString()}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 mt-2">
@@ -298,12 +295,7 @@ export default function SwapDetailsPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <a
-                                            href={tx.explorerUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="btn btn-sm btn-ghost"
-                                        >
+                                        <a href={tx.explorerUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-ghost">
                                             <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                                             View
                                         </a>
@@ -323,7 +315,8 @@ export default function SwapDetailsPage() {
                                 Ready to Claim Your Funds!
                             </h3>
                             <p className="mb-4">
-                                The resolver has matched your swap. You can now claim your {swap.direction === "ETH_TO_DOT" ? "DOT" : "ETH"} by revealing your secret.
+                                The resolver has matched your swap. You can now claim your{" "}
+                                {swap.direction === "ETH_TO_DOT" ? "DOT" : "ETH"} by revealing your secret.
                             </p>
 
                             {swap.secret ? (
@@ -339,11 +332,7 @@ export default function SwapDetailsPage() {
                                 <label className="label">
                                     <span className="label-text font-semibold">Enter Secret to Claim</span>
                                 </label>
-                                <InputBase
-                                    value={secretInput}
-                                    onChange={setSecretInput}
-                                    placeholder="0x..."
-                                />
+                                <InputBase value={secretInput} onChange={setSecretInput} placeholder="0x..." />
                             </div>
 
                             <button
@@ -370,4 +359,3 @@ export default function SwapDetailsPage() {
         </div>
     );
 }
-

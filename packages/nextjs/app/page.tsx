@@ -59,10 +59,10 @@ const HomePage: NextPage = () => {
   const userSwaps =
     totalSwaps > 0 && connectedAddress
       ? [...(ethSwapCreatedEvents || []), ...(dotSwapCreatedEvents || [])].filter(
-        (event: any) =>
-          event.args.maker.toLowerCase() === connectedAddress.toLowerCase() ||
-          event.args.taker.toLowerCase() === connectedAddress.toLowerCase(),
-      ).length
+          (event: any) =>
+            event.args.maker.toLowerCase() === connectedAddress.toLowerCase() ||
+            event.args.taker.toLowerCase() === connectedAddress.toLowerCase(),
+        ).length
       : 0;
 
   return (
@@ -248,9 +248,7 @@ const HomePage: NextPage = () => {
                 3
               </div>
               <h3 className="text-xl font-semibold mb-2">Atomic Swap</h3>
-              <p className="opacity-70">
-                Cryptographic secrets ensure both parties receive funds or get refunded.
-              </p>
+              <p className="opacity-70">Cryptographic secrets ensure both parties receive funds or get refunded.</p>
             </div>
 
             {/* Step 4 */}

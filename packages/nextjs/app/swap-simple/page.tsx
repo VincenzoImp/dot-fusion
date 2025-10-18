@@ -7,8 +7,8 @@ import { encodePacked, keccak256, parseEther, toHex } from "viem";
 import { useAccount } from "wagmi";
 import {
     ArrowRightIcon,
-    ArrowsRightLeftIcon,
     ArrowTopRightOnSquareIcon,
+    ArrowsRightLeftIcon,
     BoltIcon,
     CheckCircleIcon,
     ClockIcon,
@@ -56,16 +56,16 @@ const FastSwapPage: NextPage = () => {
     const [sendAmount, setSendAmount] = useState<string>("");
     const [receiveAmount, setReceiveAmount] = useState<string>("");
 
-    // Swap state
-    const [isCreating, setIsCreating] = useState(false);
-    const [swapCreated, setSwapCreated] = useState(false);
-    const [swapId, setSwapId] = useState<string>("");
-    const [secret, setSecret] = useState<string>("");
-    const [secretHash, setSecretHash] = useState<string>("");
+  // Swap state
+  const [isCreating, setIsCreating] = useState(false);
+  const [swapCreated, setSwapCreated] = useState(false);
+  const [swapId, setSwapId] = useState<string>("");
+  const [secret, setSecret] = useState<string>("");
+  const [secretHash, setSecretHash] = useState<string>("");
 
-    // Transaction tracking
-    const [transactions, setTransactions] = useState<SwapTransaction[]>([]);
-    const [currentStage, setCurrentStage] = useState<string>("INITIATED");
+  // Transaction tracking
+  const [transactions, setTransactions] = useState<SwapTransaction[]>([]);
+  const [currentStage, setCurrentStage] = useState<string>("INITIATED");
 
     // Resolver status
     const [resolverStatus, setResolverStatus] = useState<ResolverStatus | null>(null);
@@ -110,7 +110,7 @@ const FastSwapPage: NextPage = () => {
                         exchangeRate: FIXED_EXCHANGE_RATE,
                     });
                 }
-            } catch (error) {
+            } catch {
                 setResolverStatus({
                     online: false,
                     resolverAddress: RESOLVER_ADDRESS,
@@ -290,10 +290,9 @@ const FastSwapPage: NextPage = () => {
                         addSwapTransaction(id, dotTx);
 
                         notification.success("✅ Step 2/3: Resolver matched on Polkadot!");
-                        notification.info(
-                            "🎯 Step 3/3: You can now claim your DOT! Go to Swap Details to complete the swap.",
-                            { duration: 10000 },
-                        );
+                        notification.info("🎯 Step 3/3: You can now claim your DOT! Go to Swap Details to complete the swap.", {
+                            duration: 10000,
+                        });
                     } else {
                         notification.warning("⚠️ Resolver didn't respond. Please check My Swaps later.");
                     }
@@ -358,10 +357,9 @@ const FastSwapPage: NextPage = () => {
                         addSwapTransaction(id, ethTx);
 
                         notification.success("✅ Step 2/3: Resolver matched on Ethereum!");
-                        notification.info(
-                            "🎯 Step 3/3: You can now claim your ETH! Go to Swap Details to complete the swap.",
-                            { duration: 10000 },
-                        );
+                        notification.info("🎯 Step 3/3: You can now claim your ETH! Go to Swap Details to complete the swap.", {
+                            duration: 10000,
+                        });
                     } else {
                         notification.warning("⚠️ Resolver didn't respond. Please check My Swaps later.");
                     }
@@ -506,9 +504,7 @@ const FastSwapPage: NextPage = () => {
                                 <div className="form-control mb-6">
                                     <label className="label">
                                         <span className="label-text font-bold text-lg flex items-center gap-2">
-                                            <span className="badge badge-sm badge-primary">
-                                                {direction === "ETH_TO_DOT" ? "ETH" : "DOT"}
-                                            </span>
+                                            <span className="badge badge-sm badge-primary">{direction === "ETH_TO_DOT" ? "ETH" : "DOT"}</span>
                                             Amount to Send
                                         </span>
                                     </label>
@@ -548,19 +544,17 @@ const FastSwapPage: NextPage = () => {
                                     <AddressInput
                                         value={destinationAddress}
                                         onChange={value => setDestinationAddress(value)}
-                                        placeholder={
-                                            direction === "ETH_TO_DOT" ? "Your DOT address (0x...)" : "Your ETH address (0x...)"
-                                        }
+                                        placeholder={direction === "ETH_TO_DOT" ? "Your DOT address (0x...)" : "Your ETH address (0x...)"}
                                     />
                                 </div>
 
                                 {/* Create Button */}
                                 <button
                                     className={`btn btn-lg w-full shadow-xl ${isCreating
-                                        ? "btn-disabled loading"
-                                        : !destinationAddress || !sendAmount || !resolverStatus?.online
-                                            ? "btn-disabled"
-                                            : "btn-primary"
+                                            ? "btn-disabled loading"
+                                            : !destinationAddress || !sendAmount || !resolverStatus?.online
+                                                ? "btn-disabled"
+                                                : "btn-primary"
                                         } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
                                     onClick={createSwap}
                                     disabled={isCreating || !destinationAddress || !sendAmount || !resolverStatus?.online}
@@ -683,7 +677,7 @@ const FastSwapPage: NextPage = () => {
                                             <h4 className="font-bold mb-2">🔑 Your Secret (SAVE THIS!):</h4>
                                             <div className="font-mono text-xs bg-base-300 p-3 rounded break-all mb-2">{secret}</div>
                                             <p className="text-sm">
-                                                You'll need this secret to claim your {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}. Keep it
+                                                You&apos;ll need this secret to claim your {direction === "ETH_TO_DOT" ? "DOT" : "ETH"}. Keep it
                                                 safe!
                                             </p>
                                         </div>
