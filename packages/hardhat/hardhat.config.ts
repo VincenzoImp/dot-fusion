@@ -26,7 +26,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.20",
+        version: "0.8.23",
         settings: {
           optimizer: {
             enabled: true,
@@ -124,6 +124,11 @@ const config: HardhatUserConfig = {
     celoSepolia: {
       url: "https://forno.celo-sepolia.celo-testnet.org/",
       accounts: [deployerPrivateKey],
+    },
+    paseo: {
+      url: "https://testnet-passet-hub-eth-rpc.polkadot.io",
+      accounts: [deployerPrivateKey],
+      chainId: 420420422,
     },
   },
   // Configuration for harhdat-verify plugin

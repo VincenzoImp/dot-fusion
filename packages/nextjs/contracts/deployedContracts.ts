@@ -4,6 +4,1298 @@
  */
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
-const deployedContracts = {} as const;
+const deployedContracts = {
+  11155111: {
+    DotFusionEthereumEscrow: {
+      address: "0x43bD6B0FDAB99a9eC9eF76C3ABB23ABa125dB154",
+      abi: [
+        {
+          inputs: [
+            {
+              internalType: "uint32",
+              name: "_rescueDelay",
+              type: "uint32",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "_accessToken",
+              type: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "target",
+              type: "address",
+            },
+          ],
+          name: "AddressEmptyCode",
+          type: "error",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "account",
+              type: "address",
+            },
+          ],
+          name: "AddressInsufficientBalance",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "FailedInnerCall",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidAmount",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidParameters",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidSecret",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidSecretHash",
+          type: "error",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+          ],
+          name: "SafeERC20FailedOperation",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapAlreadyExists",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapDoesNotExist",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapNotOpen",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TimelockNotExpired",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TransferFailed",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "Unauthorized",
+          type: "error",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          name: "FundsRescued",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "SwapCancelled",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "SwapCompleted",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "maker",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "taker",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "unlockTime",
+              type: "uint256",
+            },
+          ],
+          name: "SwapCreated",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "accessToken",
+          outputs: [
+            {
+              internalType: "contract IERC20",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "canCancel",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "cancelSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+            {
+              internalType: "address",
+              name: "target",
+              type: "address",
+            },
+          ],
+          name: "completeSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "taker",
+              type: "address",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "token",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "timelock",
+              type: "uint256",
+            },
+          ],
+          name: "createSwap",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "getSwap",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "bytes32",
+                  name: "secretHash",
+                  type: "bytes32",
+                },
+                {
+                  internalType: "address payable",
+                  name: "maker",
+                  type: "address",
+                },
+                {
+                  internalType: "address payable",
+                  name: "taker",
+                  type: "address",
+                },
+                {
+                  internalType: "contract IERC20",
+                  name: "token",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "amount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "safetyDeposit",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "unlockTime",
+                  type: "uint256",
+                },
+                {
+                  internalType: "enum DotFusionEthereumEscrow.SwapState",
+                  name: "state",
+                  type: "uint8",
+                },
+                {
+                  internalType: "bytes32",
+                  name: "swapId",
+                  type: "bytes32",
+                },
+              ],
+              internalType: "struct DotFusionEthereumEscrow.Swap",
+              name: "swap",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "isValidSecret",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "owner",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "publicCancelSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "rescueDelay",
+          outputs: [
+            {
+              internalType: "uint32",
+              name: "",
+              type: "uint32",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "rescueFunds",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "",
+              type: "bytes32",
+            },
+          ],
+          name: "swaps",
+          outputs: [
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "maker",
+              type: "address",
+            },
+            {
+              internalType: "address payable",
+              name: "taker",
+              type: "address",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "token",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "safetyDeposit",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "unlockTime",
+              type: "uint256",
+            },
+            {
+              internalType: "enum DotFusionEthereumEscrow.SwapState",
+              name: "state",
+              type: "uint8",
+            },
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          stateMutability: "payable",
+          type: "receive",
+        },
+      ],
+      inheritedFunctions: {},
+      deployedOnBlock: 9437450,
+    },
+  },
+  420420422: {
+    DotFusionPolkadotEscrow: {
+      address: "0x83124fbd0a1Cf1ae5774fc30e8B733de1FE72751",
+      abi: [
+        {
+          inputs: [
+            {
+              internalType: "uint32",
+              name: "_rescueDelay",
+              type: "uint32",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "_accessToken",
+              type: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "target",
+              type: "address",
+            },
+          ],
+          name: "AddressEmptyCode",
+          type: "error",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "account",
+              type: "address",
+            },
+          ],
+          name: "AddressInsufficientBalance",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "FailedInnerCall",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidAmount",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidParameters",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidSecret",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidSecretHash",
+          type: "error",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+          ],
+          name: "SafeERC20FailedOperation",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapAlreadyExists",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapDoesNotExist",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "SwapNotOpen",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TimelockNotExpired",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "TransferFailed",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "Unauthorized",
+          type: "error",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          name: "FundsRescued",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "SwapCancelled",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "SwapCompleted",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "maker",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "taker",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "unlockTime",
+              type: "uint256",
+            },
+          ],
+          name: "SwapCreated",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "accessToken",
+          outputs: [
+            {
+              internalType: "contract IERC20",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "canCancel",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "cancelSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+            {
+              internalType: "address",
+              name: "target",
+              type: "address",
+            },
+          ],
+          name: "completeSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "maker",
+              type: "address",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "token",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "timelock",
+              type: "uint256",
+            },
+          ],
+          name: "createSwap",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "getSwap",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "bytes32",
+                  name: "secretHash",
+                  type: "bytes32",
+                },
+                {
+                  internalType: "address payable",
+                  name: "maker",
+                  type: "address",
+                },
+                {
+                  internalType: "address payable",
+                  name: "taker",
+                  type: "address",
+                },
+                {
+                  internalType: "contract IERC20",
+                  name: "token",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "amount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "safetyDeposit",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "unlockTime",
+                  type: "uint256",
+                },
+                {
+                  internalType: "enum DotFusionPolkadotEscrow.SwapState",
+                  name: "state",
+                  type: "uint8",
+                },
+                {
+                  internalType: "bytes32",
+                  name: "swapId",
+                  type: "bytes32",
+                },
+              ],
+              internalType: "struct DotFusionPolkadotEscrow.Swap",
+              name: "swap",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "isValidSecret",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "owner",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "publicCancelSwap",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "receiver",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "bytes32",
+              name: "ethereumSender",
+              type: "bytes32",
+            },
+          ],
+          name: "receiveSwap",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "rescueDelay",
+          outputs: [
+            {
+              internalType: "uint32",
+              name: "",
+              type: "uint32",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          name: "rescueFunds",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "",
+              type: "bytes32",
+            },
+          ],
+          name: "swaps",
+          outputs: [
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "maker",
+              type: "address",
+            },
+            {
+              internalType: "address payable",
+              name: "taker",
+              type: "address",
+            },
+            {
+              internalType: "contract IERC20",
+              name: "token",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "safetyDeposit",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "unlockTime",
+              type: "uint256",
+            },
+            {
+              internalType: "enum DotFusionPolkadotEscrow.SwapState",
+              name: "state",
+              type: "uint8",
+            },
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          stateMutability: "payable",
+          type: "receive",
+        },
+      ],
+      inheritedFunctions: {},
+      deployedOnBlock: 1812603,
+    },
+    DotFusionXCMBridge: {
+      address: "0x0D865BeCD96c27D20D132465f1aC4C5c3a7d2E48",
+      abi: [
+        {
+          inputs: [],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          inputs: [],
+          name: "EscrowNotSet",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "InvalidAddress",
+          type: "error",
+        },
+        {
+          inputs: [],
+          name: "Unauthorized",
+          type: "error",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "escrowAddress",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "xcmPrecompileAddress",
+              type: "address",
+            },
+          ],
+          name: "BridgeDeployed",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "receiver",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          name: "MessageReceived",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              indexed: false,
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "MessageSent",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "XCM_PRECOMPILE",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "escrow",
+          outputs: [
+            {
+              internalType: "contract DotFusionPolkadotEscrow",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "owner",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secretHash",
+              type: "bytes32",
+            },
+            {
+              internalType: "address payable",
+              name: "receiver",
+              type: "address",
+            },
+            {
+              internalType: "bytes32",
+              name: "ethereumSender",
+              type: "bytes32",
+            },
+          ],
+          name: "receiveFromEthereum",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "bytes32",
+              name: "swapId",
+              type: "bytes32",
+            },
+            {
+              internalType: "bytes32",
+              name: "secret",
+              type: "bytes32",
+            },
+          ],
+          name: "sendToEthereum",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_escrow",
+              type: "address",
+            },
+          ],
+          name: "setEscrow",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          stateMutability: "payable",
+          type: "receive",
+        },
+      ],
+      inheritedFunctions: {},
+      deployedOnBlock: 1812613,
+    },
+  },
+} as const;
 
 export default deployedContracts satisfies GenericContractsDeclaration;
