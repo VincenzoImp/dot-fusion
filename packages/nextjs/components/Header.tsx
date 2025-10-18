@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import Image from "next/image";
+// import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { hardhat } from "viem/chains";
@@ -17,11 +17,19 @@ type HeaderMenuLink = {
 
 export const menuLinks: HeaderMenuLink[] = [
   {
-    label: "Home",
+    label: "Dashboard",
     href: "/",
   },
   {
-    label: "Debug Contracts",
+    label: "Create Swap",
+    href: "/swap",
+  },
+  {
+    label: "My Swaps",
+    href: "/swaps",
+  },
+  {
+    label: "Debug",
     href: "/debug",
     icon: <BugAntIcon className="h-4 w-4" />,
   },
@@ -83,11 +91,13 @@ export const Header = () => {
         </details>
         <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
           <div className="flex relative w-10 h-10">
-            <Image alt="SE2 logo" className="cursor-pointer" fill src="/logo.svg" />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">🔗</span>
+            </div>
           </div>
           <div className="flex flex-col">
-            <span className="font-bold leading-tight">Scaffold-ETH</span>
-            <span className="text-xs">Ethereum dev stack</span>
+            <span className="font-bold leading-tight">DotFusion</span>
+            <span className="text-xs">Cross-Chain Atomic Swaps</span>
           </div>
         </Link>
         <ul className="hidden lg:flex lg:flex-nowrap menu menu-horizontal px-1 gap-2">
