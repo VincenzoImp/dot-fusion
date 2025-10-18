@@ -86,10 +86,27 @@ const CreateSwap: NextPage = () => {
       // Generate unique swap ID
       const swapId = keccak256(toHex(`${connectedAddress}-${takerAddress}-${Date.now()}`));
 
-      // Convert Polkadot address to bytes32 (assuming it's a hex string)
-      const polkadotSenderBytes = polkadotSender.startsWith("0x")
-        ? (polkadotSender as `0x${string}`)
-        : (`0x${polkadotSender}` as `0x${string}`);
+      // Convert Polkadot address to bytes32
+      // If it's already a hex string with 0x prefix and 66 chars (0x + 64 hex), use it
+      // Otherwise, pad it to 32 bytes
+      let polkadotSenderBytes: `0x${string}`;
+
+      if (polkadotSender.startsWith("0x") && polkadotSender.length === 66) {
+        // Already a proper bytes32 hex string
+        polkadotSenderBytes = polkadotSender as `0x${string}`;
+      } else if (polkadotSender.startsWith("0x")) {
+        // Hex string but not 32 bytes - pad it
+        const cleanHex = polkadotSender.slice(2);
+        const paddedHex = cleanHex.padEnd(64, "0");
+        polkadotSenderBytes = `0x${paddedHex}` as `0x${string}`;
+      } else {
+        // Not a hex string - convert to hex and pad to 32 bytes
+        const hexString = Array.from(polkadotSender)
+          .map(c => c.charCodeAt(0).toString(16).padStart(2, "0"))
+          .join("")
+          .padEnd(64, "0");
+        polkadotSenderBytes = `0x${hexString}` as `0x${string}`;
+      }
 
       await writeEthereumEscrowAsync({
         functionName: "createSwap",
@@ -241,10 +258,12 @@ const CreateSwap: NextPage = () => {
                     className="input input-bordered"
                     value={polkadotSender}
                     onChange={e => setPolkadotSender(e.target.value)}
-                    placeholder="Enter Polkadot address (hex format)"
+                    placeholder="0x... (32 bytes hex) or SS58 address"
                   />
                   <label className="label">
-                    <span className="label-text-alt">The Polkadot address that will provide DOT tokens</span>
+                    <span className="label-text-alt">
+                      The Polkadot address that will provide DOT tokens. Can be hex (0x...) or SS58 format.
+                    </span>
                   </label>
                 </div>
 

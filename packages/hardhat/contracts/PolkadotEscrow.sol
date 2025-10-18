@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title DotFusion Polkadot Escrow (Destination)
@@ -11,7 +12,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  * Funds are locked when users initiate swaps, and unlocked when secrets are revealed.
  * @custom:security-contact security@dotfusion.io
  */
-contract DotFusionPolkadotEscrow {
+contract DotFusionPolkadotEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ═══════════════════════════════════════════════════════════════════
@@ -170,24 +171,28 @@ contract DotFusionPolkadotEscrow {
      * @param secret Preimage of secretHash
      * @param target Address to receive the tokens
      */
-    function completeSwap(bytes32 swapId, bytes32 secret, address target) external {
+    function completeSwap(bytes32 swapId, bytes32 secret, address target) external nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (keccak256(abi.encodePacked(secret)) != swap.secretHash) revert InvalidSecret();
-        
+
+        // CEI Pattern: Update state before external calls
         swap.state = SwapState.COMPLETED;
-        
+        IERC20 token = swap.token;
+        uint256 amount = swap.amount;
+        uint256 deposit = swap.safetyDeposit;
+
         // Transfer tokens to target
-        swap.token.safeTransfer(target, swap.amount);
-        
+        token.safeTransfer(target, amount);
+
         // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
+        if (deposit > 0) {
+            (bool success, ) = msg.sender.call{value: deposit}("");
             if (!success) revert TransferFailed();
         }
-        
+
         emit SwapCompleted(swapId, secret);
     }
 
@@ -195,25 +200,30 @@ contract DotFusionPolkadotEscrow {
      * @notice Cancel a swap after timelock expires
      * @param swapId Unique swap identifier
      */
-    function cancelSwap(bytes32 swapId) external {
+    function cancelSwap(bytes32 swapId) external nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();
         if (msg.sender != swap.taker) revert Unauthorized();
-        
+
+        // CEI Pattern: Update state before external calls
         swap.state = SwapState.CANCELLED;
-        
+        IERC20 token = swap.token;
+        uint256 amount = swap.amount;
+        uint256 deposit = swap.safetyDeposit;
+        address payable taker = swap.taker;
+
         // Return tokens to taker
-        swap.token.safeTransfer(swap.taker, swap.amount);
-        
+        token.safeTransfer(taker, amount);
+
         // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
+        if (deposit > 0) {
+            (bool success, ) = msg.sender.call{value: deposit}("");
             if (!success) revert TransferFailed();
         }
-        
+
         emit SwapCancelled(swapId);
     }
 
@@ -221,24 +231,29 @@ contract DotFusionPolkadotEscrow {
      * @notice Public cancellation function (for access token holders)
      * @param swapId Unique swap identifier
      */
-    function publicCancelSwap(bytes32 swapId) external onlyAccessTokenHolder() {
+    function publicCancelSwap(bytes32 swapId) external onlyAccessTokenHolder() nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();
-        
+
+        // CEI Pattern: Update state before external calls
         swap.state = SwapState.CANCELLED;
-        
+        IERC20 token = swap.token;
+        uint256 amount = swap.amount;
+        uint256 deposit = swap.safetyDeposit;
+        address payable taker = swap.taker;
+
         // Return tokens to taker
-        swap.token.safeTransfer(swap.taker, swap.amount);
-        
+        token.safeTransfer(taker, amount);
+
         // Return safety deposit to caller
-        if (swap.safetyDeposit > 0) {
-            (bool success, ) = msg.sender.call{value: swap.safetyDeposit}("");
+        if (deposit > 0) {
+            (bool success, ) = msg.sender.call{value: deposit}("");
             if (!success) revert TransferFailed();
         }
-        
+
         emit SwapCancelled(swapId);
     }
 
@@ -246,16 +261,23 @@ contract DotFusionPolkadotEscrow {
      * @notice Rescue funds from a swap after rescue delay
      * @param swapId Unique swap identifier
      */
-    function rescueFunds(bytes32 swapId) external onlyOwner {
+    function rescueFunds(bytes32 swapId) external onlyOwner nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
+        if (swap.state == SwapState.COMPLETED) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime + rescueDelay) revert TimelockNotExpired();
-        
+
+        // CEI Pattern: Update state before external calls
+        IERC20 token = swap.token;
+        uint256 amount = swap.amount;
+        swap.state = SwapState.CANCELLED;
+        swap.amount = 0; // Prevent double-rescue
+
         // Transfer tokens to owner
-        swap.token.safeTransfer(owner, swap.amount);
-        
-        emit FundsRescued(swapId, address(swap.token), swap.amount);
+        token.safeTransfer(owner, amount);
+
+        emit FundsRescued(swapId, address(token), amount);
     }
 
     /**

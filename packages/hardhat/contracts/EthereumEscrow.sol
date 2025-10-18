@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title DotFusion Ethereum Escrow (Source)
  * @notice Source escrow contract for cross-chain atomic swaps on Ethereum
@@ -8,7 +10,7 @@ pragma solidity 0.8.23;
  * Funds are locked when users initiate swaps, and unlocked when secrets are revealed.
  * @custom:security-contact security@dotfusion.io
  */
-contract DotFusionEthereumEscrow {
+contract DotFusionEthereumEscrow is ReentrancyGuard {
 
     // ═══════════════════════════════════════════════════════════════════
     //                              TYPES
@@ -172,20 +174,23 @@ contract DotFusionEthereumEscrow {
      * @param swapId Unique swap identifier
      * @param secret Preimage of secretHash
      */
-    function completeSwap(bytes32 swapId, bytes32 secret) external {
+    function completeSwap(bytes32 swapId, bytes32 secret) external nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (keccak256(abi.encodePacked(secret)) != swap.secretHash) revert InvalidSecret();
         if (msg.sender != swap.taker) revert Unauthorized();
-        
+
+        // CEI Pattern: Update state before external call
         swap.state = SwapState.COMPLETED;
-        
+        uint256 amount = swap.ethAmount;
+        address payable recipient = swap.taker;
+
         // Transfer ETH to taker (who provided DOT on Polkadot)
-        (bool success, ) = swap.taker.call{value: swap.ethAmount}("");
+        (bool success, ) = recipient.call{value: amount}("");
         if (!success) revert TransferFailed();
-        
+
         emit SwapCompleted(swapId, secret);
     }
 
@@ -193,20 +198,23 @@ contract DotFusionEthereumEscrow {
      * @notice Cancel a swap after timelock expires
      * @param swapId Unique swap identifier
      */
-    function cancelSwap(bytes32 swapId) external {
+    function cancelSwap(bytes32 swapId) external nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();
         if (msg.sender != swap.maker) revert Unauthorized();
-        
+
+        // CEI Pattern: Update state before external call
         swap.state = SwapState.CANCELLED;
-        
+        uint256 amount = swap.ethAmount;
+        address payable recipient = swap.maker;
+
         // Return ETH to maker
-        (bool success, ) = swap.maker.call{value: swap.ethAmount}("");
+        (bool success, ) = recipient.call{value: amount}("");
         if (!success) revert TransferFailed();
-        
+
         emit SwapCancelled(swapId);
     }
 
@@ -214,19 +222,22 @@ contract DotFusionEthereumEscrow {
      * @notice Public cancellation function (for access token holders)
      * @param swapId Unique swap identifier
      */
-    function publicCancelSwap(bytes32 swapId) external onlyAccessTokenHolder() {
+    function publicCancelSwap(bytes32 swapId) external onlyAccessTokenHolder() nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
         if (swap.state != SwapState.OPEN) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();
-        
+
+        // CEI Pattern: Update state before external call
         swap.state = SwapState.CANCELLED;
-        
+        uint256 amount = swap.ethAmount;
+        address payable recipient = swap.maker;
+
         // Return ETH to maker
-        (bool success, ) = swap.maker.call{value: swap.ethAmount}("");
+        (bool success, ) = recipient.call{value: amount}("");
         if (!success) revert TransferFailed();
-        
+
         emit SwapCancelled(swapId);
     }
 
@@ -234,17 +245,23 @@ contract DotFusionEthereumEscrow {
      * @notice Rescue funds from a swap after rescue delay
      * @param swapId Unique swap identifier
      */
-    function rescueFunds(bytes32 swapId) external onlyOwner {
+    function rescueFunds(bytes32 swapId) external onlyOwner nonReentrant {
         Swap storage swap = swaps[swapId];
-        
+
         if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();
+        if (swap.state == SwapState.COMPLETED) revert SwapNotOpen();
         if (block.timestamp < swap.unlockTime + rescueDelay) revert TimelockNotExpired();
-        
+
+        // CEI Pattern: Update state before external call
+        uint256 amount = swap.ethAmount;
+        swap.state = SwapState.CANCELLED;
+        swap.ethAmount = 0; // Prevent double-rescue
+
         // Transfer ETH to owner
-        (bool success, ) = owner.call{value: swap.ethAmount}("");
+        (bool success, ) = owner.call{value: amount}("");
         if (!success) revert TransferFailed();
-        
-        emit FundsRescued(swapId, swap.ethAmount);
+
+        emit FundsRescued(swapId, amount);
     }
 
     /**

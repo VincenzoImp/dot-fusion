@@ -1,0 +1,780 @@
+{
+  "address": "0xD70DD3659DddB5Cf2F14BD194a1824344280D032",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint32",
+          "name": "_rescueDelay",
+          "type": "uint32"
+        },
+        {
+          "internalType": "address",
+          "name": "_accessToken",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidParameters",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidSecret",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidSecretHash",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ReentrancyGuardReentrantCall",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SwapAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SwapDoesNotExist",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SwapNotOpen",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TimelockNotExpired",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TransferFailed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Unauthorized",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ethAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "FundsRescued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "SwapCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "secret",
+          "type": "bytes32"
+        }
+      ],
+      "name": "SwapCompleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "secretHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "maker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "taker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ethAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "dotAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "exchangeRate",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "unlockTime",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "polkadotSender",
+          "type": "bytes32"
+        }
+      ],
+      "name": "SwapCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "accessToken",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "canCancel",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "cancelSwap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "secret",
+          "type": "bytes32"
+        }
+      ],
+      "name": "completeSwap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "secretHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address payable",
+          "name": "taker",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "ethAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dotAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "exchangeRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timelock",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "polkadotSender",
+          "type": "bytes32"
+        }
+      ],
+      "name": "createSwap",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getSwap",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "secretHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address payable",
+              "name": "maker",
+              "type": "address"
+            },
+            {
+              "internalType": "address payable",
+              "name": "taker",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ethAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "dotAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "exchangeRate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "unlockTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum DotFusionEthereumEscrow.SwapState",
+              "name": "state",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "swapId",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "polkadotSender",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct DotFusionEthereumEscrow.Swap",
+          "name": "swap",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "secret",
+          "type": "bytes32"
+        }
+      ],
+      "name": "isValidSecret",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "publicCancelSwap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rescueDelay",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "rescueFunds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "swaps",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "secretHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address payable",
+          "name": "maker",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "taker",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "ethAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dotAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "exchangeRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "unlockTime",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum DotFusionEthereumEscrow.SwapState",
+          "name": "state",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "swapId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "polkadotSender",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "transactionHash": "0x638801caa9c7742f39db3fb5f9dd57aac4c32441e75b951f01e4e93a00bd8f64",
+  "receipt": {
+    "to": null,
+    "from": "0x62206414DdE41446A0fa8eF6c6e93b9AAd9413ab",
+    "contractAddress": "0xD70DD3659DddB5Cf2F14BD194a1824344280D032",
+    "transactionIndex": 2,
+    "gasUsed": "4486995780",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xc2922815ad6877a3128e414ccd623e8895a8050904f1e1f70129a3d2b09d603e",
+    "transactionHash": "0x638801caa9c7742f39db3fb5f9dd57aac4c32441e75b951f01e4e93a00bd8f64",
+    "logs": [],
+    "blockNumber": 1813584,
+    "cumulativeGasUsed": "0",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    604800,
+    "0x0000000000000000000000000000000000000000"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "84f9edad5888131d534001fb7f164cf9",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.23+commit.f704f362\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"_rescueDelay\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"_accessToken\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidParameters\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSecret\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSecretHash\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ReentrancyGuardReentrantCall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SwapAlreadyExists\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SwapDoesNotExist\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SwapNotOpen\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TimelockNotExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TransferFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"ethAmount\",\"type\":\"uint256\"}],\"name\":\"FundsRescued\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"SwapCancelled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"secret\",\"type\":\"bytes32\"}],\"name\":\"SwapCompleted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"secretHash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"maker\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"taker\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"ethAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"dotAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"exchangeRate\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"unlockTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"polkadotSender\",\"type\":\"bytes32\"}],\"name\":\"SwapCreated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"accessToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"canCancel\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"cancelSwap\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"secret\",\"type\":\"bytes32\"}],\"name\":\"completeSwap\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"secretHash\",\"type\":\"bytes32\"},{\"internalType\":\"address payable\",\"name\":\"taker\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"ethAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"dotAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"exchangeRate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timelock\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"polkadotSender\",\"type\":\"bytes32\"}],\"name\":\"createSwap\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"getSwap\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"secretHash\",\"type\":\"bytes32\"},{\"internalType\":\"address payable\",\"name\":\"maker\",\"type\":\"address\"},{\"internalType\":\"address payable\",\"name\":\"taker\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"ethAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"dotAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"exchangeRate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"unlockTime\",\"type\":\"uint256\"},{\"internalType\":\"enum DotFusionEthereumEscrow.SwapState\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"polkadotSender\",\"type\":\"bytes32\"}],\"internalType\":\"struct DotFusionEthereumEscrow.Swap\",\"name\":\"swap\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"secret\",\"type\":\"bytes32\"}],\"name\":\"isValidSecret\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"publicCancelSwap\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rescueDelay\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"}],\"name\":\"rescueFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"swaps\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"secretHash\",\"type\":\"bytes32\"},{\"internalType\":\"address payable\",\"name\":\"maker\",\"type\":\"address\"},{\"internalType\":\"address payable\",\"name\":\"taker\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"ethAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"dotAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"exchangeRate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"unlockTime\",\"type\":\"uint256\"},{\"internalType\":\"enum DotFusionEthereumEscrow.SwapState\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"swapId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"polkadotSender\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}],\"devdoc\":{\"custom:security-contact\":\"security@dotfusion.io\",\"details\":\"This contract handles multiple swaps simultaneously. Each swap is identified by a unique swapId. Funds are locked when users initiate swaps, and unlocked when secrets are revealed.\",\"errors\":{\"ReentrancyGuardReentrantCall()\":[{\"details\":\"Unauthorized reentrant call.\"}]},\"kind\":\"dev\",\"methods\":{\"canCancel(bytes32)\":{\"params\":{\"swapId\":\"Unique swap identifier\"},\"returns\":{\"_0\":\"canCancel True if timelock expired and swap is still open\"}},\"cancelSwap(bytes32)\":{\"params\":{\"swapId\":\"Unique swap identifier\"}},\"completeSwap(bytes32,bytes32)\":{\"params\":{\"secret\":\"Preimage of secretHash\",\"swapId\":\"Unique swap identifier\"}},\"createSwap(bytes32,bytes32,address,uint256,uint256,uint256,uint256,bytes32)\":{\"params\":{\"dotAmount\":\"Amount of DOT expected in return\",\"ethAmount\":\"Amount of ETH being swapped\",\"exchangeRate\":\"Fixed exchange rate (DOT per ETH * 1e18)\",\"polkadotSender\":\"Polkadot address of the taker\",\"secretHash\":\"Hash of the secret\",\"swapId\":\"Unique identifier for this swap\",\"taker\":\"Ethereum address of the taker (DOT provider)\",\"timelock\":\"Duration before cancellation is allowed\"}},\"getSwap(bytes32)\":{\"params\":{\"swapId\":\"Unique swap identifier\"},\"returns\":{\"swap\":\"Full swap struct\"}},\"isValidSecret(bytes32,bytes32)\":{\"params\":{\"secret\":\"Preimage to test\",\"swapId\":\"Unique swap identifier\"},\"returns\":{\"_0\":\"isValid True if secret matches secretHash\"}},\"publicCancelSwap(bytes32)\":{\"params\":{\"swapId\":\"Unique swap identifier\"}},\"rescueFunds(bytes32)\":{\"params\":{\"swapId\":\"Unique swap identifier\"}}},\"title\":\"DotFusion Ethereum Escrow (Source)\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"canCancel(bytes32)\":{\"notice\":\"Check if swap can be cancelled\"},\"cancelSwap(bytes32)\":{\"notice\":\"Cancel a swap after timelock expires\"},\"completeSwap(bytes32,bytes32)\":{\"notice\":\"Complete a swap by revealing the secret (called by taker after providing DOT)\"},\"createSwap(bytes32,bytes32,address,uint256,uint256,uint256,uint256,bytes32)\":{\"notice\":\"Create a new ETH-DOT cross-chain swap\"},\"getSwap(bytes32)\":{\"notice\":\"Get swap details\"},\"isValidSecret(bytes32,bytes32)\":{\"notice\":\"Check if secret is valid for a swap\"},\"publicCancelSwap(bytes32)\":{\"notice\":\"Public cancellation function (for access token holders)\"},\"rescueFunds(bytes32)\":{\"notice\":\"Rescue funds from a swap after rescue delay\"}},\"notice\":\"Source escrow contract for cross-chain atomic swaps on Ethereum\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/EthereumEscrow.sol\":\"DotFusionEthereumEscrow\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/utils/ReentrancyGuard.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v5.0.0) (utils/ReentrancyGuard.sol)\\n\\npragma solidity ^0.8.20;\\n\\n/**\\n * @dev Contract module that helps prevent reentrant calls to a function.\\n *\\n * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier\\n * available, which can be applied to functions to make sure there are no nested\\n * (reentrant) calls to them.\\n *\\n * Note that because there is a single `nonReentrant` guard, functions marked as\\n * `nonReentrant` may not call one another. This can be worked around by making\\n * those functions `private`, and then adding `external` `nonReentrant` entry\\n * points to them.\\n *\\n * TIP: If you would like to learn more about reentrancy and alternative ways\\n * to protect against it, check out our blog post\\n * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].\\n */\\nabstract contract ReentrancyGuard {\\n    // Booleans are more expensive than uint256 or any type that takes up a full\\n    // word because each write operation emits an extra SLOAD to first read the\\n    // slot's contents, replace the bits taken up by the boolean, and then write\\n    // back. This is the compiler's defense against contract upgrades and\\n    // pointer aliasing, and it cannot be disabled.\\n\\n    // The values being non-zero value makes deployment a bit more expensive,\\n    // but in exchange the refund on every call to nonReentrant will be lower in\\n    // amount. Since refunds are capped to a percentage of the total\\n    // transaction's gas, it is best to keep them low in cases like this one, to\\n    // increase the likelihood of the full refund coming into effect.\\n    uint256 private constant NOT_ENTERED = 1;\\n    uint256 private constant ENTERED = 2;\\n\\n    uint256 private _status;\\n\\n    /**\\n     * @dev Unauthorized reentrant call.\\n     */\\n    error ReentrancyGuardReentrantCall();\\n\\n    constructor() {\\n        _status = NOT_ENTERED;\\n    }\\n\\n    /**\\n     * @dev Prevents a contract from calling itself, directly or indirectly.\\n     * Calling a `nonReentrant` function from another `nonReentrant`\\n     * function is not supported. It is possible to prevent this from happening\\n     * by making the `nonReentrant` function external, and making it call a\\n     * `private` function that does the actual work.\\n     */\\n    modifier nonReentrant() {\\n        _nonReentrantBefore();\\n        _;\\n        _nonReentrantAfter();\\n    }\\n\\n    function _nonReentrantBefore() private {\\n        // On the first call to nonReentrant, _status will be NOT_ENTERED\\n        if (_status == ENTERED) {\\n            revert ReentrancyGuardReentrantCall();\\n        }\\n\\n        // Any calls to nonReentrant after this point will fail\\n        _status = ENTERED;\\n    }\\n\\n    function _nonReentrantAfter() private {\\n        // By storing the original value once again, a refund is triggered (see\\n        // https://eips.ethereum.org/EIPS/eip-2200)\\n        _status = NOT_ENTERED;\\n    }\\n\\n    /**\\n     * @dev Returns true if the reentrancy guard is currently set to \\\"entered\\\", which indicates there is a\\n     * `nonReentrant` function in the call stack.\\n     */\\n    function _reentrancyGuardEntered() internal view returns (bool) {\\n        return _status == ENTERED;\\n    }\\n}\\n\",\"keccak256\":\"0xf980daa263b661ab8ddee7d4fd833c7da7e7995e2c359ff1f17e67e4112f2236\",\"license\":\"MIT\"},\"contracts/EthereumEscrow.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nimport { ReentrancyGuard } from \\\"@openzeppelin/contracts/utils/ReentrancyGuard.sol\\\";\\n\\n/**\\n * @title DotFusion Ethereum Escrow (Source)\\n * @notice Source escrow contract for cross-chain atomic swaps on Ethereum\\n * @dev This contract handles multiple swaps simultaneously. Each swap is identified by a unique swapId.\\n * Funds are locked when users initiate swaps, and unlocked when secrets are revealed.\\n * @custom:security-contact security@dotfusion.io\\n */\\ncontract DotFusionEthereumEscrow is ReentrancyGuard {\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                              TYPES\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    \\n    enum SwapState {\\n        INVALID,\\n        OPEN,\\n        COMPLETED,\\n        CANCELLED\\n    }\\n    \\n    struct Swap {\\n        bytes32 secretHash;           // Hash of the secret (preimage)\\n        address payable maker;        // User who initiated the swap (ETH provider)\\n        address payable taker;        // User who will complete the swap (DOT provider)\\n        uint256 ethAmount;            // Amount of ETH being swapped\\n        uint256 dotAmount;            // Amount of DOT expected in return\\n        uint256 exchangeRate;         // Fixed exchange rate (DOT per ETH * 1e18)\\n        uint256 unlockTime;           // When swap can be cancelled\\n        SwapState state;              // Current swap state\\n        bytes32 swapId;               // Unique swap identifier\\n        bytes32 polkadotSender;       // Polkadot address of the taker\\n    }\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                            STORAGE\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    mapping(bytes32 => Swap) public swaps;\\n    \\n    // Owner and rescue delays\\n    address public immutable owner;\\n    uint32 public immutable rescueDelay;\\n    address public immutable accessToken;\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                            EVENTS\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    event SwapCreated(\\n        bytes32 indexed swapId,\\n        bytes32 indexed secretHash,\\n        address indexed maker,\\n        address taker,\\n        uint256 ethAmount,\\n        uint256 dotAmount,\\n        uint256 exchangeRate,\\n        uint256 unlockTime,\\n        bytes32 polkadotSender\\n    );\\n    \\n    event SwapCompleted(\\n        bytes32 indexed swapId,\\n        bytes32 secret\\n    );\\n    \\n    event SwapCancelled(\\n        bytes32 indexed swapId\\n    );\\n    \\n    event FundsRescued(\\n        bytes32 indexed swapId,\\n        uint256 ethAmount\\n    );\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                            ERRORS\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    error SwapAlreadyExists();\\n    error SwapDoesNotExist();\\n    error InvalidSecretHash();\\n    error InvalidAmount();\\n    error InvalidSecret();\\n    error SwapNotOpen();\\n    error TimelockNotExpired();\\n    error Unauthorized();\\n    error TransferFailed();\\n    error InvalidParameters();\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                            MODIFIERS\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    modifier onlyOwner() {\\n        if (msg.sender != owner) revert Unauthorized();\\n        _;\\n    }\\n\\n    modifier onlyAccessTokenHolder() {\\n        if (accessToken != address(0)) {\\n            // For now, we'll skip the access token check since we're not using ERC20\\n            // This can be implemented later if needed\\n        }\\n        _;\\n    }\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                          CONSTRUCTOR\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    constructor(uint32 _rescueDelay, address _accessToken) {\\n        owner = msg.sender;\\n        rescueDelay = _rescueDelay;\\n        accessToken = _accessToken;\\n    }\\n\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n    //                        EXTERNAL FUNCTIONS\\n    // \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\n\\n    /**\\n     * @notice Create a new ETH-DOT cross-chain swap\\n     * @param swapId Unique identifier for this swap\\n     * @param secretHash Hash of the secret\\n     * @param taker Ethereum address of the taker (DOT provider)\\n     * @param ethAmount Amount of ETH being swapped\\n     * @param dotAmount Amount of DOT expected in return\\n     * @param exchangeRate Fixed exchange rate (DOT per ETH * 1e18)\\n     * @param timelock Duration before cancellation is allowed\\n     * @param polkadotSender Polkadot address of the taker\\n     */\\n    function createSwap(\\n        bytes32 swapId,\\n        bytes32 secretHash,\\n        address payable taker,\\n        uint256 ethAmount,\\n        uint256 dotAmount,\\n        uint256 exchangeRate,\\n        uint256 timelock,\\n        bytes32 polkadotSender\\n    ) external payable {\\n        if (secretHash == bytes32(0)) revert InvalidSecretHash();\\n        if (ethAmount == 0 || dotAmount == 0) revert InvalidAmount();\\n        if (exchangeRate == 0) revert InvalidParameters();\\n        if (swaps[swapId].state != SwapState.INVALID) revert SwapAlreadyExists();\\n        if (msg.value != ethAmount) revert InvalidAmount();\\n        \\n        uint256 unlockTime = block.timestamp + timelock;\\n        \\n        // Store swap\\n        swaps[swapId] = Swap({\\n            secretHash: secretHash,\\n            maker: payable(msg.sender),\\n            taker: taker,\\n            ethAmount: ethAmount,\\n            dotAmount: dotAmount,\\n            exchangeRate: exchangeRate,\\n            unlockTime: unlockTime,\\n            state: SwapState.OPEN,\\n            swapId: swapId,\\n            polkadotSender: polkadotSender\\n        });\\n        \\n        emit SwapCreated(swapId, secretHash, msg.sender, taker, ethAmount, dotAmount, exchangeRate, unlockTime, polkadotSender);\\n    }\\n\\n    /**\\n     * @notice Complete a swap by revealing the secret (called by taker after providing DOT)\\n     * @param swapId Unique swap identifier\\n     * @param secret Preimage of secretHash\\n     */\\n    function completeSwap(bytes32 swapId, bytes32 secret) external nonReentrant {\\n        Swap storage swap = swaps[swapId];\\n\\n        if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();\\n        if (swap.state != SwapState.OPEN) revert SwapNotOpen();\\n        if (keccak256(abi.encodePacked(secret)) != swap.secretHash) revert InvalidSecret();\\n        if (msg.sender != swap.taker) revert Unauthorized();\\n\\n        // CEI Pattern: Update state before external call\\n        swap.state = SwapState.COMPLETED;\\n        uint256 amount = swap.ethAmount;\\n        address payable recipient = swap.taker;\\n\\n        // Transfer ETH to taker (who provided DOT on Polkadot)\\n        (bool success, ) = recipient.call{value: amount}(\\\"\\\");\\n        if (!success) revert TransferFailed();\\n\\n        emit SwapCompleted(swapId, secret);\\n    }\\n\\n    /**\\n     * @notice Cancel a swap after timelock expires\\n     * @param swapId Unique swap identifier\\n     */\\n    function cancelSwap(bytes32 swapId) external nonReentrant {\\n        Swap storage swap = swaps[swapId];\\n\\n        if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();\\n        if (swap.state != SwapState.OPEN) revert SwapNotOpen();\\n        if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();\\n        if (msg.sender != swap.maker) revert Unauthorized();\\n\\n        // CEI Pattern: Update state before external call\\n        swap.state = SwapState.CANCELLED;\\n        uint256 amount = swap.ethAmount;\\n        address payable recipient = swap.maker;\\n\\n        // Return ETH to maker\\n        (bool success, ) = recipient.call{value: amount}(\\\"\\\");\\n        if (!success) revert TransferFailed();\\n\\n        emit SwapCancelled(swapId);\\n    }\\n\\n    /**\\n     * @notice Public cancellation function (for access token holders)\\n     * @param swapId Unique swap identifier\\n     */\\n    function publicCancelSwap(bytes32 swapId) external onlyAccessTokenHolder() nonReentrant {\\n        Swap storage swap = swaps[swapId];\\n\\n        if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();\\n        if (swap.state != SwapState.OPEN) revert SwapNotOpen();\\n        if (block.timestamp < swap.unlockTime) revert TimelockNotExpired();\\n\\n        // CEI Pattern: Update state before external call\\n        swap.state = SwapState.CANCELLED;\\n        uint256 amount = swap.ethAmount;\\n        address payable recipient = swap.maker;\\n\\n        // Return ETH to maker\\n        (bool success, ) = recipient.call{value: amount}(\\\"\\\");\\n        if (!success) revert TransferFailed();\\n\\n        emit SwapCancelled(swapId);\\n    }\\n\\n    /**\\n     * @notice Rescue funds from a swap after rescue delay\\n     * @param swapId Unique swap identifier\\n     */\\n    function rescueFunds(bytes32 swapId) external onlyOwner nonReentrant {\\n        Swap storage swap = swaps[swapId];\\n\\n        if (swap.state == SwapState.INVALID) revert SwapDoesNotExist();\\n        if (swap.state == SwapState.COMPLETED) revert SwapNotOpen();\\n        if (block.timestamp < swap.unlockTime + rescueDelay) revert TimelockNotExpired();\\n\\n        // CEI Pattern: Update state before external call\\n        uint256 amount = swap.ethAmount;\\n        swap.state = SwapState.CANCELLED;\\n        swap.ethAmount = 0; // Prevent double-rescue\\n\\n        // Transfer ETH to owner\\n        (bool success, ) = owner.call{value: amount}(\\\"\\\");\\n        if (!success) revert TransferFailed();\\n\\n        emit FundsRescued(swapId, amount);\\n    }\\n\\n    /**\\n     * @notice Get swap details\\n     * @param swapId Unique swap identifier\\n     * @return swap Full swap struct\\n     */\\n    function getSwap(bytes32 swapId) external view returns (Swap memory swap) {\\n        return swaps[swapId];\\n    }\\n\\n    /**\\n     * @notice Check if swap can be cancelled\\n     * @param swapId Unique swap identifier\\n     * @return canCancel True if timelock expired and swap is still open\\n     */\\n    function canCancel(bytes32 swapId) external view returns (bool) {\\n        Swap storage swap = swaps[swapId];\\n        return swap.state == SwapState.OPEN && block.timestamp >= swap.unlockTime;\\n    }\\n\\n    /**\\n     * @notice Check if secret is valid for a swap\\n     * @param swapId Unique swap identifier\\n     * @param secret Preimage to test\\n     * @return isValid True if secret matches secretHash\\n     */\\n    function isValidSecret(bytes32 swapId, bytes32 secret) external view returns (bool) {\\n        return keccak256(abi.encodePacked(secret)) == swaps[swapId].secretHash;\\n    }\\n\\n    /**\\n     * @dev Fallback function to accept ETH\\n     */\\n    receive() external payable {}\\n}\\n\",\"keccak256\":\"0x710faef8325fb130b0335054fdab07d1146bb708642e4b4100adb4bbbc3e44c8\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60e060405234801561001057600080fd5b506040516110ac3803806110ac83398101604081905261002f91610054565b60016000553360805263ffffffff90911660a0526001600160a01b031660c0526100a3565b6000806040838503121561006757600080fd5b825163ffffffff8116811461007b57600080fd5b60208401519092506001600160a01b038116811461009857600080fd5b809150509250929050565b60805160a05160c051610fc56100e760003960006102300152600081816102f701526103ff0152600081816101a401528181610339015261047d0152610fc56000f3fe6080604052600436106100ab5760003560e01c80638da5cb5b116100645780638da5cb5b14610192578063bffbf4dc146101de578063d541beb3146101fe578063e243c5fb1461021e578063eb84e7f214610252578063f143d8a0146102e557600080fd5b806321922931146100b757806335e18788146100d95780633da0e66e146100ec5780634287e358146101225780636476fd3c1461015257806378dc33561461017257600080fd5b366100b257005b600080fd5b3480156100c357600080fd5b506100d76100d2366004610d90565b61032e565b005b6100d76100e7366004610da9565b610549565b3480156100f857600080fd5b5061010c610107366004610d90565b6107bc565b6040516101199190610e52565b60405180910390f35b34801561012e57600080fd5b5061014261013d366004610eea565b6108cb565b6040519015158152602001610119565b34801561015e57600080fd5b506100d761016d366004610d90565b610907565b34801561017e57600080fd5b506100d761018d366004610eea565b610a7b565b34801561019e57600080fd5b506101c67f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610119565b3480156101ea57600080fd5b506101426101f9366004610d90565b610c4c565b34801561020a57600080fd5b506100d7610219366004610d90565b610c8e565b34801561022a57600080fd5b506101c67f000000000000000000000000000000000000000000000000000000000000000081565b34801561025e57600080fd5b506102cf61026d366004610d90565b600160208190526000918252604090912080549181015460028201546003830154600484015460058501546006860154600787015460088801546009909801546001600160a01b03978816989790961696949593949293919260ff909116918a565b6040516101199a99989796959493929190610f0c565b3480156102f157600080fd5b506103197f000000000000000000000000000000000000000000000000000000000000000081565b60405163ffffffff9091168152602001610119565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614610376576040516282b42960e81b815260040160405180910390fd5b61037e610d66565b600081815260016020526040812090600782015460ff1660038111156103a6576103a6610e1a565b036103c457604051631a40316d60e01b815260040160405180910390fd5b6002600782015460ff1660038111156103df576103df610e1a565b036103fd57604051638d393d0b60e01b815260040160405180910390fd5b7f000000000000000000000000000000000000000000000000000000000000000063ffffffff1681600601546104339190610f6e565b4210156104535760405163621e25c360e01b815260040160405180910390fd5b6003818101805460078401805460ff19169093179092556000908190556040516001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169083908381818185875af1925050503d80600081146104d8576040519150601f19603f3d011682016040523d82523d6000602084013e6104dd565b606091505b50509050806104ff576040516312171d8360e31b815260040160405180910390fd5b837fb00a5180e3bbc9046f9ae3105cab97059cf433fe2aee3d4721590dbd899fdfe38360405161053191815260200190565b60405180910390a25050506105466001600055565b50565b866105675760405163d6502e2b60e01b815260040160405180910390fd5b841580610572575083155b156105905760405163162908e360e11b815260040160405180910390fd5b826000036105b157604051630e52390960e41b815260040160405180910390fd5b60008881526001602052604081206007015460ff1660038111156105d7576105d7610e1a565b146105f5576040516339a2986760e11b815260040160405180910390fd5b8434146106155760405163162908e360e11b815260040160405180910390fd5b60006106218342610f6e565b9050604051806101400160405280898152602001336001600160a01b03168152602001886001600160a01b031681526020018781526020018681526020018581526020018281526020016001600381111561067e5761067e610e1a565b815260208082018c9052604091820185905260008c8152600180835290839020845181559184015182820180546001600160a01b03199081166001600160a01b03938416179091559385015160028401805490951691161790925560608301516003808301919091556080840151600483015560a0840151600583015560c0840151600683015560e084015160078301805493949193909260ff199091169190849081111561072f5761072f610e1a565b0217905550610100820151600882015561012090910151600990910155604080516001600160a01b038916815260208101889052908101869052606081018590526080810182905260a08101839052339089908b907f4f7de1f26400eeaae9ea83f11645741e73181833160379d31561d4dc44e8788d9060c00160405180910390a4505050505050505050565b6040805161014081018252600080825260208201819052918101829052606081018290526080810182905260a0810182905260c0810182905260e08101829052610100810182905261012081019190915260008281526001602081815260409283902083516101408101855281548152928101546001600160a01b0390811692840192909252600281015490911692820192909252600380830154606083015260048301546080830152600583015460a0830152600683015460c0830152600783015491929160e084019160ff9091169081111561089c5761089c610e1a565b60038111156108ad576108ad610e1a565b81526008820154602082015260099091015460409091015292915050565b60008281526001602090815260408083205481519283018590529101604051602081830303815290604052805190602001201490505b92915050565b61090f610d66565b600081815260016020526040812090600782015460ff16600381111561093757610937610e1a565b0361095557604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff16600381111561097057610970610e1a565b1461098e57604051638d393d0b60e01b815260040160405180910390fd5b80600601544210156109b35760405163621e25c360e01b815260040160405180910390fd5b60078101805460ff1916600390811790915581015460018201546040516001600160a01b0390911690600090829084908381818185875af1925050503d8060008114610a1b576040519150601f19603f3d011682016040523d82523d6000602084013e610a20565b606091505b5050905080610a42576040516312171d8360e31b815260040160405180910390fd5b60405185907f5a399591cfd74c375a1ffd61c20221db0db82381f65516889ed13c8cd1f99d5b90600090a2505050506105466001600055565b610a83610d66565b600082815260016020526040812090600782015460ff166003811115610aab57610aab610e1a565b03610ac957604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff166003811115610ae457610ae4610e1a565b14610b0257604051638d393d0b60e01b815260040160405180910390fd5b80546040805160208101859052016040516020818303038152906040528051906020012014610b445760405163abab6bd760e01b815260040160405180910390fd5b60028101546001600160a01b03163314610b70576040516282b42960e81b815260040160405180910390fd5b60078101805460ff191660029081179091556003820154908201546040516001600160a01b0390911690600090829084908381818185875af1925050503d8060008114610bd9576040519150601f19603f3d011682016040523d82523d6000602084013e610bde565b606091505b5050905080610c00576040516312171d8360e31b815260040160405180910390fd5b857f7430d80e0e3cfb925010ff8993f6a56392199211e297fc7825278f29980ccf5186604051610c3291815260200190565b60405180910390a250505050610c486001600055565b5050565b6000818152600160208190526040822090600782015460ff166003811115610c7657610c76610e1a565b148015610c87575080600601544210155b9392505050565b610c96610d66565b600081815260016020526040812090600782015460ff166003811115610cbe57610cbe610e1a565b03610cdc57604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff166003811115610cf757610cf7610e1a565b14610d1557604051638d393d0b60e01b815260040160405180910390fd5b8060060154421015610d3a5760405163621e25c360e01b815260040160405180910390fd5b60018101546001600160a01b031633146109b3576040516282b42960e81b815260040160405180910390fd5b600260005403610d8957604051633ee5aeb560e01b815260040160405180910390fd5b6002600055565b600060208284031215610da257600080fd5b5035919050565b600080600080600080600080610100898b031215610dc657600080fd5b883597506020890135965060408901356001600160a01b0381168114610deb57600080fd5b979a96995096976060810135975060808101359660a0820135965060c0820135955060e0909101359350915050565b634e487b7160e01b600052602160045260246000fd5b60048110610e4e57634e487b7160e01b600052602160045260246000fd5b9052565b81518152602080830151610140830191610e76908401826001600160a01b03169052565b506040830151610e9160408401826001600160a01b03169052565b50606083015160608301526080830151608083015260a083015160a083015260c083015160c083015260e0830151610ecc60e0840182610e30565b50610100838101519083015261012092830151929091019190915290565b60008060408385031215610efd57600080fd5b50508035926020909101359150565b8a81526001600160a01b038a8116602083015289166040820152606081018890526080810187905260a0810186905260c081018590526101408101610f5460e0830186610e30565b610100820193909352610120015298975050505050505050565b8082018082111561090157634e487b7160e01b600052601160045260246000fdfea26469706673582212207a76a3e082af58b31325e24e5774acc0acf3241e62ecfb19f96561a2d3cb7e1e64736f6c63430008170033",
+  "deployedBytecode": "0x6080604052600436106100ab5760003560e01c80638da5cb5b116100645780638da5cb5b14610192578063bffbf4dc146101de578063d541beb3146101fe578063e243c5fb1461021e578063eb84e7f214610252578063f143d8a0146102e557600080fd5b806321922931146100b757806335e18788146100d95780633da0e66e146100ec5780634287e358146101225780636476fd3c1461015257806378dc33561461017257600080fd5b366100b257005b600080fd5b3480156100c357600080fd5b506100d76100d2366004610d90565b61032e565b005b6100d76100e7366004610da9565b610549565b3480156100f857600080fd5b5061010c610107366004610d90565b6107bc565b6040516101199190610e52565b60405180910390f35b34801561012e57600080fd5b5061014261013d366004610eea565b6108cb565b6040519015158152602001610119565b34801561015e57600080fd5b506100d761016d366004610d90565b610907565b34801561017e57600080fd5b506100d761018d366004610eea565b610a7b565b34801561019e57600080fd5b506101c67f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610119565b3480156101ea57600080fd5b506101426101f9366004610d90565b610c4c565b34801561020a57600080fd5b506100d7610219366004610d90565b610c8e565b34801561022a57600080fd5b506101c67f000000000000000000000000000000000000000000000000000000000000000081565b34801561025e57600080fd5b506102cf61026d366004610d90565b600160208190526000918252604090912080549181015460028201546003830154600484015460058501546006860154600787015460088801546009909801546001600160a01b03978816989790961696949593949293919260ff909116918a565b6040516101199a99989796959493929190610f0c565b3480156102f157600080fd5b506103197f000000000000000000000000000000000000000000000000000000000000000081565b60405163ffffffff9091168152602001610119565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614610376576040516282b42960e81b815260040160405180910390fd5b61037e610d66565b600081815260016020526040812090600782015460ff1660038111156103a6576103a6610e1a565b036103c457604051631a40316d60e01b815260040160405180910390fd5b6002600782015460ff1660038111156103df576103df610e1a565b036103fd57604051638d393d0b60e01b815260040160405180910390fd5b7f000000000000000000000000000000000000000000000000000000000000000063ffffffff1681600601546104339190610f6e565b4210156104535760405163621e25c360e01b815260040160405180910390fd5b6003818101805460078401805460ff19169093179092556000908190556040516001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169083908381818185875af1925050503d80600081146104d8576040519150601f19603f3d011682016040523d82523d6000602084013e6104dd565b606091505b50509050806104ff576040516312171d8360e31b815260040160405180910390fd5b837fb00a5180e3bbc9046f9ae3105cab97059cf433fe2aee3d4721590dbd899fdfe38360405161053191815260200190565b60405180910390a25050506105466001600055565b50565b866105675760405163d6502e2b60e01b815260040160405180910390fd5b841580610572575083155b156105905760405163162908e360e11b815260040160405180910390fd5b826000036105b157604051630e52390960e41b815260040160405180910390fd5b60008881526001602052604081206007015460ff1660038111156105d7576105d7610e1a565b146105f5576040516339a2986760e11b815260040160405180910390fd5b8434146106155760405163162908e360e11b815260040160405180910390fd5b60006106218342610f6e565b9050604051806101400160405280898152602001336001600160a01b03168152602001886001600160a01b031681526020018781526020018681526020018581526020018281526020016001600381111561067e5761067e610e1a565b815260208082018c9052604091820185905260008c8152600180835290839020845181559184015182820180546001600160a01b03199081166001600160a01b03938416179091559385015160028401805490951691161790925560608301516003808301919091556080840151600483015560a0840151600583015560c0840151600683015560e084015160078301805493949193909260ff199091169190849081111561072f5761072f610e1a565b0217905550610100820151600882015561012090910151600990910155604080516001600160a01b038916815260208101889052908101869052606081018590526080810182905260a08101839052339089908b907f4f7de1f26400eeaae9ea83f11645741e73181833160379d31561d4dc44e8788d9060c00160405180910390a4505050505050505050565b6040805161014081018252600080825260208201819052918101829052606081018290526080810182905260a0810182905260c0810182905260e08101829052610100810182905261012081019190915260008281526001602081815260409283902083516101408101855281548152928101546001600160a01b0390811692840192909252600281015490911692820192909252600380830154606083015260048301546080830152600583015460a0830152600683015460c0830152600783015491929160e084019160ff9091169081111561089c5761089c610e1a565b60038111156108ad576108ad610e1a565b81526008820154602082015260099091015460409091015292915050565b60008281526001602090815260408083205481519283018590529101604051602081830303815290604052805190602001201490505b92915050565b61090f610d66565b600081815260016020526040812090600782015460ff16600381111561093757610937610e1a565b0361095557604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff16600381111561097057610970610e1a565b1461098e57604051638d393d0b60e01b815260040160405180910390fd5b80600601544210156109b35760405163621e25c360e01b815260040160405180910390fd5b60078101805460ff1916600390811790915581015460018201546040516001600160a01b0390911690600090829084908381818185875af1925050503d8060008114610a1b576040519150601f19603f3d011682016040523d82523d6000602084013e610a20565b606091505b5050905080610a42576040516312171d8360e31b815260040160405180910390fd5b60405185907f5a399591cfd74c375a1ffd61c20221db0db82381f65516889ed13c8cd1f99d5b90600090a2505050506105466001600055565b610a83610d66565b600082815260016020526040812090600782015460ff166003811115610aab57610aab610e1a565b03610ac957604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff166003811115610ae457610ae4610e1a565b14610b0257604051638d393d0b60e01b815260040160405180910390fd5b80546040805160208101859052016040516020818303038152906040528051906020012014610b445760405163abab6bd760e01b815260040160405180910390fd5b60028101546001600160a01b03163314610b70576040516282b42960e81b815260040160405180910390fd5b60078101805460ff191660029081179091556003820154908201546040516001600160a01b0390911690600090829084908381818185875af1925050503d8060008114610bd9576040519150601f19603f3d011682016040523d82523d6000602084013e610bde565b606091505b5050905080610c00576040516312171d8360e31b815260040160405180910390fd5b857f7430d80e0e3cfb925010ff8993f6a56392199211e297fc7825278f29980ccf5186604051610c3291815260200190565b60405180910390a250505050610c486001600055565b5050565b6000818152600160208190526040822090600782015460ff166003811115610c7657610c76610e1a565b148015610c87575080600601544210155b9392505050565b610c96610d66565b600081815260016020526040812090600782015460ff166003811115610cbe57610cbe610e1a565b03610cdc57604051631a40316d60e01b815260040160405180910390fd5b6001600782015460ff166003811115610cf757610cf7610e1a565b14610d1557604051638d393d0b60e01b815260040160405180910390fd5b8060060154421015610d3a5760405163621e25c360e01b815260040160405180910390fd5b60018101546001600160a01b031633146109b3576040516282b42960e81b815260040160405180910390fd5b600260005403610d8957604051633ee5aeb560e01b815260040160405180910390fd5b6002600055565b600060208284031215610da257600080fd5b5035919050565b600080600080600080600080610100898b031215610dc657600080fd5b883597506020890135965060408901356001600160a01b0381168114610deb57600080fd5b979a96995096976060810135975060808101359660a0820135965060c0820135955060e0909101359350915050565b634e487b7160e01b600052602160045260246000fd5b60048110610e4e57634e487b7160e01b600052602160045260246000fd5b9052565b81518152602080830151610140830191610e76908401826001600160a01b03169052565b506040830151610e9160408401826001600160a01b03169052565b50606083015160608301526080830151608083015260a083015160a083015260c083015160c083015260e0830151610ecc60e0840182610e30565b50610100838101519083015261012092830151929091019190915290565b60008060408385031215610efd57600080fd5b50508035926020909101359150565b8a81526001600160a01b038a8116602083015289166040820152606081018890526080810187905260a0810186905260c081018590526101408101610f5460e0830186610e30565b610100820193909352610120015298975050505050505050565b8082018082111561090157634e487b7160e01b600052601160045260246000fdfea26469706673582212207a76a3e082af58b31325e24e5774acc0acf3241e62ecfb19f96561a2d3cb7e1e64736f6c63430008170033",
+  "devdoc": {
+    "custom:security-contact": "security@dotfusion.io",
+    "details": "This contract handles multiple swaps simultaneously. Each swap is identified by a unique swapId. Funds are locked when users initiate swaps, and unlocked when secrets are revealed.",
+    "errors": {
+      "ReentrancyGuardReentrantCall()": [
+        {
+          "details": "Unauthorized reentrant call."
+        }
+      ]
+    },
+    "kind": "dev",
+    "methods": {
+      "canCancel(bytes32)": {
+        "params": {
+          "swapId": "Unique swap identifier"
+        },
+        "returns": {
+          "_0": "canCancel True if timelock expired and swap is still open"
+        }
+      },
+      "cancelSwap(bytes32)": {
+        "params": {
+          "swapId": "Unique swap identifier"
+        }
+      },
+      "completeSwap(bytes32,bytes32)": {
+        "params": {
+          "secret": "Preimage of secretHash",
+          "swapId": "Unique swap identifier"
+        }
+      },
+      "createSwap(bytes32,bytes32,address,uint256,uint256,uint256,uint256,bytes32)": {
+        "params": {
+          "dotAmount": "Amount of DOT expected in return",
+          "ethAmount": "Amount of ETH being swapped",
+          "exchangeRate": "Fixed exchange rate (DOT per ETH * 1e18)",
+          "polkadotSender": "Polkadot address of the taker",
+          "secretHash": "Hash of the secret",
+          "swapId": "Unique identifier for this swap",
+          "taker": "Ethereum address of the taker (DOT provider)",
+          "timelock": "Duration before cancellation is allowed"
+        }
+      },
+      "getSwap(bytes32)": {
+        "params": {
+          "swapId": "Unique swap identifier"
+        },
+        "returns": {
+          "swap": "Full swap struct"
+        }
+      },
+      "isValidSecret(bytes32,bytes32)": {
+        "params": {
+          "secret": "Preimage to test",
+          "swapId": "Unique swap identifier"
+        },
+        "returns": {
+          "_0": "isValid True if secret matches secretHash"
+        }
+      },
+      "publicCancelSwap(bytes32)": {
+        "params": {
+          "swapId": "Unique swap identifier"
+        }
+      },
+      "rescueFunds(bytes32)": {
+        "params": {
+          "swapId": "Unique swap identifier"
+        }
+      }
+    },
+    "title": "DotFusion Ethereum Escrow (Source)",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "canCancel(bytes32)": {
+        "notice": "Check if swap can be cancelled"
+      },
+      "cancelSwap(bytes32)": {
+        "notice": "Cancel a swap after timelock expires"
+      },
+      "completeSwap(bytes32,bytes32)": {
+        "notice": "Complete a swap by revealing the secret (called by taker after providing DOT)"
+      },
+      "createSwap(bytes32,bytes32,address,uint256,uint256,uint256,uint256,bytes32)": {
+        "notice": "Create a new ETH-DOT cross-chain swap"
+      },
+      "getSwap(bytes32)": {
+        "notice": "Get swap details"
+      },
+      "isValidSecret(bytes32,bytes32)": {
+        "notice": "Check if secret is valid for a swap"
+      },
+      "publicCancelSwap(bytes32)": {
+        "notice": "Public cancellation function (for access token holders)"
+      },
+      "rescueFunds(bytes32)": {
+        "notice": "Rescue funds from a swap after rescue delay"
+      }
+    },
+    "notice": "Source escrow contract for cross-chain atomic swaps on Ethereum",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 667,
+        "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+        "label": "_status",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 764,
+        "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+        "label": "swaps",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_bytes32,t_struct(Swap)759_storage)"
+      }
+    ],
+    "types": {
+      "t_address_payable": {
+        "encoding": "inplace",
+        "label": "address payable",
+        "numberOfBytes": "20"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_enum(SwapState)737": {
+        "encoding": "inplace",
+        "label": "enum DotFusionEthereumEscrow.SwapState",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_bytes32,t_struct(Swap)759_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => struct DotFusionEthereumEscrow.Swap)",
+        "numberOfBytes": "32",
+        "value": "t_struct(Swap)759_storage"
+      },
+      "t_struct(Swap)759_storage": {
+        "encoding": "inplace",
+        "label": "struct DotFusionEthereumEscrow.Swap",
+        "members": [
+          {
+            "astId": 739,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "secretHash",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bytes32"
+          },
+          {
+            "astId": 741,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "maker",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address_payable"
+          },
+          {
+            "astId": 743,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "taker",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address_payable"
+          },
+          {
+            "astId": 745,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "ethAmount",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 747,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "dotAmount",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 749,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "exchangeRate",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 751,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "unlockTime",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 754,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "state",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_enum(SwapState)737"
+          },
+          {
+            "astId": 756,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "swapId",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_bytes32"
+          },
+          {
+            "astId": 758,
+            "contract": "contracts/EthereumEscrow.sol:DotFusionEthereumEscrow",
+            "label": "polkadotSender",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_bytes32"
+          }
+        ],
+        "numberOfBytes": "320"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
