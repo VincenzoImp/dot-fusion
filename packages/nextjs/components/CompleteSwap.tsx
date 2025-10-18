@@ -16,7 +16,6 @@ interface CompleteSwapProps {
 const CompleteSwap: React.FC<CompleteSwapProps> = ({ swapId, onComplete }) => {
     const { isConnected } = useAccount();
     const [secret, setSecret] = useState<string>("");
-    const [targetAddress, setTargetAddress] = useState<string>("");
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Read swap data
@@ -37,8 +36,8 @@ const CompleteSwap: React.FC<CompleteSwapProps> = ({ swapId, onComplete }) => {
             return;
         }
 
-        if (!secret || !targetAddress) {
-            toast.error("Please fill in all required fields");
+        if (!secret) {
+            toast.error("Please enter the secret");
             return;
         }
 
@@ -60,12 +59,11 @@ const CompleteSwap: React.FC<CompleteSwapProps> = ({ swapId, onComplete }) => {
 
             await writeEthereumEscrowAsync({
                 functionName: "completeSwap",
-                args: [swapId as `0x${string}`, secret as `0x${string}`, targetAddress as `0x${string}`],
+                args: [swapId as `0x${string}`, secret as `0x${string}`],
             });
 
             toast.success("Swap completed successfully!");
             setSecret("");
-            setTargetAddress("");
             onComplete?.();
         } catch (error) {
             console.error("Error completing swap:", error);
@@ -126,7 +124,7 @@ const CompleteSwap: React.FC<CompleteSwapProps> = ({ swapId, onComplete }) => {
                             </label>
                             <div className="p-2 bg-base-200 rounded">
                                 <span className="font-mono">
-                                    {swapData.amount ? (Number(swapData.amount) / 1e18).toFixed(6) : "0"} ETH
+                                    {swapData.ethAmount ? (Number(swapData.ethAmount) / 1e18).toFixed(6) : "0"} ETH
                                 </span>
                             </div>
                         </div>
@@ -155,27 +153,13 @@ const CompleteSwap: React.FC<CompleteSwapProps> = ({ swapId, onComplete }) => {
                         )}
                     </div>
 
-                    {/* Target Address */}
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-semibold">Target Address</span>
-                            <span className="label-text-alt text-error">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            className="input input-bordered"
-                            value={targetAddress}
-                            onChange={e => setTargetAddress(e.target.value)}
-                            placeholder="Address to receive the tokens"
-                        />
-                    </div>
 
                     {/* Action Button */}
                     <div className="card-actions justify-end">
                         <button
                             className="btn btn-primary"
                             onClick={completeSwap}
-                            disabled={isCompleting || !secret || !targetAddress || !isValidSecret()}
+                            disabled={isCompleting || !secret || !isValidSecret()}
                         >
                             {isCompleting ? (
                                 <>

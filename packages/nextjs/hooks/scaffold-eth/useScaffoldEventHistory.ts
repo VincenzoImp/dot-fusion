@@ -129,10 +129,10 @@ export const useScaffoldEventHistory = <
     fromBlock !== undefined
       ? fromBlock
       : BigInt(
-          deployedContractData && "deployedOnBlock" in deployedContractData
-            ? deployedContractData.deployedOnBlock || 0
-            : 0,
-        );
+        deployedContractData && "deployedOnBlock" in deployedContractData
+          ? deployedContractData.deployedOnBlock || 0
+          : 0,
+      );
 
   const query = useInfiniteQuery({
     queryKey: [

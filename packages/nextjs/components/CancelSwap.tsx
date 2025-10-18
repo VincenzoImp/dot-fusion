@@ -138,7 +138,7 @@ const CancelSwap: React.FC<CancelSwapProps> = ({ swapId, onCancel }) => {
                             </label>
                             <div className="p-2 bg-base-200 rounded">
                                 <span className="font-mono">
-                                    {swapData.amount ? (Number(swapData.amount) / 1e18).toFixed(6) : "0"} ETH
+                                    {swapData.ethAmount ? (Number(swapData.ethAmount) / 1e18).toFixed(6) : "0"} ETH
                                 </span>
                             </div>
                         </div>

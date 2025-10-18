@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NextPage } from "next";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
@@ -15,8 +15,7 @@ import {
 import CancelSwap from "~~/components/CancelSwap";
 import CompleteSwap from "~~/components/CompleteSwap";
 import { Address } from "~~/components/scaffold-eth";
-
-// import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth"; // Temporarily disabled to prevent infinite loops
+import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth";
 
 type SwapState = "INVALID" | "OPEN" | "COMPLETED" | "CANCELLED";
 
@@ -36,24 +35,91 @@ interface SwapData {
 const MySwaps: NextPage = () => {
   const { address: connectedAddress, isConnected } = useAccount();
   const [swaps, setSwaps] = useState<SwapData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedSwap, setSelectedSwap] = useState<SwapData | null>(null);
   const [showCompleteSwap, setShowCompleteSwap] = useState(false);
   const [showCancelSwap, setShowCancelSwap] = useState(false);
 
-  // Initialize with empty swaps to prevent infinite loops
-  useEffect(() => {
-    if (!connectedAddress) {
-      setSwaps([]);
-      setLoading(false);
-      return;
+  // Fetch SwapCreated events from EthereumEscrow
+  const {
+    data: swapCreatedEvents,
+    isLoading: isLoadingCreated,
+  } = useScaffoldEventHistory({
+    contractName: "DotFusionEthereumEscrow",
+    eventName: "SwapCreated",
+    fromBlock: 0n,
+    watch: true,
+  });
+
+  // Fetch SwapCompleted events
+  const { data: swapCompletedEvents, isLoading: isLoadingCompleted } = useScaffoldEventHistory({
+    contractName: "DotFusionEthereumEscrow",
+    eventName: "SwapCompleted",
+    fromBlock: 0n,
+    watch: true,
+  });
+
+  // Fetch SwapCancelled events
+  const { data: swapCancelledEvents, isLoading: isLoadingCancelled } = useScaffoldEventHistory({
+    contractName: "DotFusionEthereumEscrow",
+    eventName: "SwapCancelled",
+    fromBlock: 0n,
+    watch: true,
+  });
+
+  // Process events and filter for user's swaps using useMemo to prevent infinite loops
+  const processedSwaps = useMemo(() => {
+    if (!connectedAddress || !swapCreatedEvents) {
+      return [];
     }
 
-    // For now, just set empty swaps to prevent infinite loops
-    // TODO: Implement proper event fetching without causing infinite loops
-    setSwaps([]);
-    setLoading(false);
-  }, [connectedAddress]);
+    // Create a map to track swap states
+    const swapStates = new Map<string, SwapState>();
+
+    // Mark completed swaps
+    swapCompletedEvents?.forEach(event => {
+      if (event.args.swapId) {
+        swapStates.set(event.args.swapId, "COMPLETED");
+      }
+    });
+
+    // Mark cancelled swaps
+    swapCancelledEvents?.forEach(event => {
+      if (event.args.swapId) {
+        swapStates.set(event.args.swapId, "CANCELLED");
+      }
+    });
+
+    // Filter swaps where user is maker or taker
+    return swapCreatedEvents
+      .filter(
+        event =>
+          event.args.maker?.toLowerCase() === connectedAddress.toLowerCase() ||
+          event.args.taker?.toLowerCase() === connectedAddress.toLowerCase(),
+      )
+      .map(event => {
+        const swapId = event.args.swapId || "";
+        return {
+          swapId,
+          secretHash: event.args.secretHash || "",
+          maker: event.args.maker || "",
+          taker: event.args.taker || "",
+          token: "0x0000000000000000000000000000000000000000", // ETH
+          amount: event.args.ethAmount?.toString() || "0",
+          unlockTime: event.args.unlockTime?.toString() || "0",
+          state: swapStates.get(swapId) || "OPEN",
+          transactionHash: event.transactionHash || "",
+          blockNumber: Number(event.blockNumber || 0),
+        };
+      })
+      .sort((a, b) => b.blockNumber - a.blockNumber); // Sort by most recent first
+  }, [connectedAddress, swapCreatedEvents, swapCompletedEvents, swapCancelledEvents]);
+
+  // Update swaps state when processed swaps change
+  useEffect(() => {
+    setSwaps(processedSwaps);
+  }, [processedSwaps]);
+
+  const loading = isLoadingCreated || isLoadingCompleted || isLoadingCancelled;
 
   const getStateIcon = (state: SwapState) => {
     switch (state) {
