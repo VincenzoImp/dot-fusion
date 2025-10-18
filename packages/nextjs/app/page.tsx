@@ -34,9 +34,12 @@ const HomePage: NextPage = () => {
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               {isConnected ? (
                 <>
-                  <Link href="/swap" className="btn btn-primary btn-lg">
+                  <Link href="/swap-simple" className="btn btn-primary btn-lg">
                     <BoltIcon className="w-6 h-6" />
-                    Start Swap
+                    Instant Swap
+                  </Link>
+                  <Link href="/swap" className="btn btn-outline btn-lg">
+                    Advanced Swap
                   </Link>
                   <Link href="/swaps" className="btn btn-outline btn-lg">
                     <ClockIcon className="w-6 h-6" />
@@ -185,7 +188,7 @@ const HomePage: NextPage = () => {
           </p>
 
           {isConnected ? (
-            <Link href="/swap" className="btn btn-primary btn-lg">
+            <Link href="/swap-simple" className="btn btn-primary btn-lg">
               <BoltIcon className="w-6 h-6" />
               Start Your First Swap
             </Link>

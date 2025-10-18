@@ -29,6 +29,8 @@ DotFusion is a decentralized cross-chain atomic swap platform enabling trustless
 - ✅ Atomic guarantees: swap completes fully or not at all
 - ✅ Hash Time-Locked Contracts (HTLC) for security
 - ✅ Fixed exchange rate: 1 ETH = 100,000 DOT (1 DOT = 0.00001 ETH)
+- ✅ **NEW: Resolver Service** for automatic swap fulfillment
+- ✅ **NEW: Simplified Swap UI** for instant swaps
 
 ### **XCM Precompile Integration** 🌟
 - ✅ Native Polkadot VM cross-chain messaging
@@ -37,11 +39,13 @@ DotFusion is a decentralized cross-chain atomic swap platform enabling trustless
 - ✅ Seamless communication between parachains
 
 ### **User-Friendly Interface**
-- ✅ 3-step swap creation process
+- ✅ **Instant Swap UI**: Simple interface with automatic fulfillment
+- ✅ **Advanced Swap UI**: 3-step process for custom counterparties
 - ✅ Auto-calculating amounts
 - ✅ Real-time swap monitoring dashboard
 - ✅ Self-swap option for testing
 - ✅ Complete swap management (create, participate, complete, cancel)
+- ✅ **API Endpoints**: Get resolver status and quotes
 
 ### **Production-Ready Smart Contracts**
 - ✅ Deployed on Sepolia (Ethereum) and Paseo Asset Hub (Polkadot)
@@ -142,6 +146,10 @@ All contracts are deployed and verified. You can interact with them directly or 
 
 ## 🛠️ Setup Instructions
 
+> 🚀 **Quick Start**: For the fastest setup with automatic swap fulfillment, see [QUICKSTART.md](./QUICKSTART.md)
+>
+> 📖 **Resolver Service**: For running your own liquidity provider, see [RESOLVER_SERVICE.md](./RESOLVER_SERVICE.md)
+
 ### **Prerequisites:**
 - Node.js >= 18.17
 - Yarn >= 1.22
@@ -209,10 +217,25 @@ http://localhost:3000
 
 ## 📖 How to Use
 
-### **Creating a Swap:**
+### **Option 1: Instant Swap (Recommended)**
+
+Use the simplified UI with automatic resolver fulfillment:
 
 1. **Connect Wallet** - Click "Connect Wallet" and select your wallet
-2. **Navigate to "Create Swap"** - Choose swap direction (ETH→DOT or DOT→ETH)
+2. **Navigate to "Instant Swap"** - Click the "Instant Swap" button
+3. **Choose Direction** - Select ETH→DOT or DOT→ETH
+4. **Enter Amount** - Input amount to send (receive amount auto-calculates)
+5. **Enter Destination** - Provide your receiving address
+6. **Click Swap** - Approve transaction and the resolver will automatically fulfill it!
+
+The resolver service detects your swap and automatically creates the counterparty swap, completing the atomic swap process for you.
+
+### **Option 2: Advanced Swap (Manual)**
+
+Create a swap with a specific counterparty:
+
+1. **Connect Wallet** - Click "Connect Wallet" and select your wallet
+2. **Navigate to "Advanced Swap"** - Choose swap direction (ETH→DOT or DOT→ETH)
 3. **Enter Amount** - Input amount to send (receive amount auto-calculates)
 4. **Enter Addresses** - Provide counterparty addresses (or use "self-swap" for testing)
 5. **Generate Secret** - Click "Generate Secret" (keep it safe!)
@@ -254,6 +277,9 @@ dot-fusion/
 │   │   ├── deploy/
 │   │   │   └── 00_deploy_all.ts      # Deployment script
 │   │   ├── scripts/
+│   │   │   ├── resolver-api.ts       # 🆕 API-based resolver (recommended)
+│   │   │   ├── resolver-cross-chain.ts # Event-listening resolver
+│   │   │   ├── resolver-service.ts   # Legacy single-chain resolver
 │   │   │   ├── configureXCMBridge.ts # Configure bridge
 │   │   │   └── checkBridgeStatus.ts  # Verify configuration
 │   │   └── test/                     # Contract tests
@@ -261,10 +287,12 @@ dot-fusion/
 │   └── nextjs/                   # Frontend application
 │       ├── app/
 │       │   ├── page.tsx              # Landing page
-│       │   ├── swap/page.tsx         # Create swap
+│       │   ├── swap-simple/page.tsx  # 🆕 Instant swap UI
+│       │   ├── swap/page.tsx         # Advanced swap UI
 │       │   ├── swaps/page.tsx        # My swaps
 │       │   ├── dashboard/page.tsx    # Statistics
-│       │   └── complete/[swapId]/    # Complete swap
+│       │   ├── complete/[swapId]/    # Complete swap
+│       │   └── api/resolver/         # 🆕 Resolver API endpoints
 │       ├── components/
 │       │   ├── SwapParticipant.tsx   # Find & participate
 │       │   ├── SwapCompletion.tsx    # Complete flow
@@ -272,6 +300,13 @@ dot-fusion/
 │       └── hooks/                    # Custom React hooks
 │
 ├── README.md
+├── START_RESOLVER_API.md         # 🆕 Quick start with API resolver
+├── RESOLVER_API.md               # 🆕 API resolver documentation
+├── SIMPLE_TESTING.md             # 🆕 Manual testing guide
+├── START_HERE.md                 # 🆕 Event-listening resolver guide
+├── CROSS_CHAIN_SETUP.md          # 🆕 Cross-chain resolver setup
+├── QUICKSTART.md                 # Original quick start guide
+├── RESOLVER_SERVICE.md           # Legacy resolver documentation
 └── package.json
 ```
 
@@ -327,6 +362,14 @@ yarn chain          # Start local Hardhat node
 yarn deploy         # Deploy contracts to local network
 yarn start          # Start Next.js frontend
 yarn test           # Run smart contract tests
+```
+
+### **Resolver Services:**
+```bash
+yarn resolver-api                  # Start resolver API (recommended - simple)
+yarn resolver-cross-chain          # Start event-listening resolver (complex)
+yarn resolver-service              # Legacy single-chain resolver
+yarn generate                      # Generate new resolver wallet
 ```
 
 ### **Bridge Management:**
@@ -450,11 +493,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 📚 Documentation
+
+### Getting Started
+- **[START_RESOLVER_API.md](./START_RESOLVER_API.md)** - 🌟 **Recommended!** Simple API-based resolver
+- **[SIMPLE_TESTING.md](./SIMPLE_TESTING.md)** - Test without any backend service
+- **[START_HERE.md](./START_HERE.md)** - Advanced event-listening resolver setup
+
+### Resolver Services
+- **[RESOLVER_API.md](./RESOLVER_API.md)** - Full API documentation (recommended approach)
+- **[CROSS_CHAIN_SETUP.md](./CROSS_CHAIN_SETUP.md)** - Event-listening resolver (complex)
+- **[RESOLVER_SERVICE.md](./RESOLVER_SERVICE.md)** - Single-chain resolver (legacy)
+
+### Deployment & Contributing
+- **[TESTNET_SETUP.md](./TESTNET_SETUP.md)** - Deploy contracts to testnets
+- **[QUICKSTART.md](./QUICKSTART.md)** - Original quick start guide
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines
+- **Inline Code Comments** - Comprehensive comments in smart contracts
+
 ## 📞 Contact & Links
 
 - **GitHub**: [https://github.com/VincenzoImp/dot-fusion](https://github.com/VincenzoImp/dot-fusion)
 - **Twitter/X**: Tag with `#DotFusion` `#Polkadot` `#ETHRome` `#AtomicSwaps`
-- **Documentation**: This README + inline code comments
+- **Documentation**: See above
 - **Support**: Open an issue on GitHub
 
 ---
