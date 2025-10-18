@@ -65,6 +65,10 @@ const CreateSwapPage: NextPage = () => {
   const [swapCreated, setSwapCreated] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Secret input state
+  const [customSecret, setCustomSecret] = useState("");
+  const [useCustomSecret, setUseCustomSecret] = useState(false);
+
   // Contract hooks
   const { writeContractAsync: writeEthereumEscrow } = useScaffoldWriteContract({
     contractName: "DotFusionEthereumEscrow",
@@ -134,7 +138,7 @@ const CreateSwapPage: NextPage = () => {
   /**
    * Generate cryptographically secure random secret
    */
-  const generateSecret = () => {
+  const generateRandomSecret = () => {
     setIsGenerating(true);
     try {
       const randomBytes = new Uint8Array(32);
@@ -143,22 +147,47 @@ const CreateSwapPage: NextPage = () => {
         .map(b => b.toString(16).padStart(2, "0"))
         .join("")}`;
 
-      const hash = keccak256(encodePacked(["bytes32"], [secretHex as `0x${string}`]));
-      const timestamp = Date.now();
-      const id = keccak256(toHex(`swap_${connectedAddress}_${timestamp}`));
-
-      setSwapData({
-        secret: secretHex,
-        secretHash: hash,
-        swapId: id,
-      });
-
-      notification.success("🔐 Secret generated securely!");
+      setCustomSecret(secretHex);
+      setUseCustomSecret(true);
+      notification.success("🔐 Random secret generated securely!");
     } catch (error) {
       console.error("Error generating secret:", error);
       notification.error("Failed to generate secret");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Process secret (either custom or generated) and create swap data
+   */
+  const processSecret = () => {
+    if (!customSecret) {
+      notification.error("Please enter or generate a secret");
+      return;
+    }
+
+    try {
+      // Validate secret format (should be 0x + 64 hex characters)
+      if (!/^0x[a-fA-F0-9]{64}$/.test(customSecret)) {
+        notification.error("Secret must be 64 hex characters (0x + 64 chars)");
+        return;
+      }
+
+      const hash = keccak256(encodePacked(["bytes32"], [customSecret as `0x${string}`]));
+      const timestamp = Date.now();
+      const id = keccak256(toHex(`swap_${connectedAddress}_${timestamp}`));
+
+      setSwapData({
+        secret: customSecret,
+        secretHash: hash,
+        swapId: id,
+      });
+
+      notification.success("🔐 Secret processed successfully!");
+    } catch (error) {
+      console.error("Error processing secret:", error);
+      notification.error("Failed to process secret");
     }
   };
 
@@ -480,84 +509,119 @@ const CreateSwapPage: NextPage = () => {
               </div>
             </div>
 
-            {/* Step 3: Generate Secret & Create */}
+            {/* Step 3: Secret Configuration */}
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
                 <h2 className="card-title mb-4">
                   <span className="badge badge-primary">3</span>
-                  Generate Secret & Create Swap
+                  Configure Secret
                 </h2>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Left: Generate Secret */}
-                  <div>
-                    <button
-                      className={`btn btn-primary w-full ${isGenerating ? "loading" : ""}`}
-                      onClick={generateSecret}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating ? (
-                        "Generating..."
-                      ) : (
-                        <>
-                          <KeyIcon className="w-5 h-5" />
-                          Generate Secret
-                        </>
-                      )}
-                    </button>
-
-                    {swapData && (
-                      <div className="mt-4 space-y-3">
-                        <div>
-                          <label className="label-text text-sm font-semibold">Secret Hash</label>
-                          <div className="flex gap-2 mt-1">
-                            <input
-                              type="text"
-                              className="input input-bordered input-sm w-full font-mono text-xs"
-                              value={swapData.secretHash}
-                              readOnly
-                            />
-                            <button
-                              className="btn btn-sm btn-square btn-outline"
-                              onClick={() => copyToClipboard(swapData.secretHash, "Secret Hash")}
-                            >
-                              <DocumentDuplicateIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="alert alert-warning alert-sm">
-                          <ExclamationTriangleIcon className="w-4 h-4" />
-                          <span className="text-xs">Keep your secret private until you want to complete the swap!</span>
-                        </div>
+                <div className="space-y-6">
+                  {/* Secret Input Section */}
+                  <div className="p-6 bg-gradient-to-br from-base-300/50 to-base-300/30 rounded-xl border border-base-300">
+                    <div className="space-y-4">
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-bold flex items-center gap-2">
+                            <KeyIcon className="w-5 h-5 text-primary" />
+                            Secret (64 hex characters)
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          className="input input-bordered font-mono text-sm bg-base-100"
+                          placeholder="0x..."
+                          value={customSecret}
+                          onChange={(e) => setCustomSecret(e.target.value)}
+                        />
+                        <label className="label">
+                          <span className="label-text-alt opacity-70">
+                            Enter your own secret or generate a random one
+                          </span>
+                        </label>
                       </div>
-                    )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          className={`btn btn-outline btn-primary ${isGenerating ? "loading" : ""}`}
+                          onClick={generateRandomSecret}
+                          disabled={isGenerating}
+                        >
+                          {!isGenerating && <KeyIcon className="w-5 h-5" />}
+                          {isGenerating ? "Generating..." : "Generate Random"}
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          onClick={processSecret}
+                          disabled={!customSecret}
+                        >
+                          <CheckCircleIcon className="w-5 h-5" />
+                          Process Secret
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Right: Create Swap */}
-                  <div>
-                    <button
-                      className={`btn btn-success w-full ${isCreating ? "loading" : ""}`}
-                      onClick={createSwap}
-                      disabled={!swapData || isCreating}
-                    >
-                      {isCreating ? (
-                        "Creating Swap..."
-                      ) : (
-                        <>
-                          <LockClosedIcon className="w-5 h-5" />
-                          Create Swap
-                        </>
-                      )}
-                    </button>
-
-                    {swapData && !swapCreated && (
-                      <div className="alert alert-info alert-sm mt-4">
-                        <CheckCircleIcon className="w-4 h-4" />
-                        <span className="text-xs">Ready to create! Click above to proceed.</span>
+                  {/* Secret Hash Display */}
+                  {swapData ? (
+                    <div className="p-6 bg-gradient-to-br from-success/10 to-success/5 rounded-xl border-2 border-success/30">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="label-text font-bold flex items-center gap-2">
+                            <CheckCircleIcon className="w-5 h-5 text-success" />
+                            Secret Hash
+                          </label>
+                          <div className="badge badge-success badge-sm">Ready</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            className="input input-bordered input-sm w-full font-mono text-xs bg-base-100"
+                            value={swapData.secretHash}
+                            readOnly
+                          />
+                          <button
+                            className="btn btn-sm btn-square btn-outline btn-success"
+                            onClick={() => copyToClipboard(swapData.secretHash, "Secret Hash")}
+                          >
+                            <DocumentDuplicateIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-sm text-success opacity-80 flex items-center gap-2">
+                          <CheckCircleIcon className="w-4 h-4" />
+                          Secret processed successfully! You can now create the swap.
+                        </p>
                       </div>
-                    )}
+                    </div>
+                  ) : (
+                    <div className="alert alert-info">
+                      <ExclamationTriangleIcon className="w-5 h-5" />
+                      <span>Please enter or generate a secret to continue</span>
+                    </div>
+                  )}
+
+                  {/* Security Warning */}
+                  <div className="alert alert-warning">
+                    <ExclamationTriangleIcon className="w-5 h-5" />
+                    <div>
+                      <h4 className="font-bold">Keep Your Secret Safe!</h4>
+                      <p className="text-sm">
+                        Your secret is only known to you. Keep it private until you want to complete the swap.
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Create Swap Button */}
+                  <div className="divider my-2"></div>
+                  <button
+                    className={`btn btn-success btn-lg w-full ${isCreating ? "loading" : ""}`}
+                    onClick={createSwap}
+                    disabled={!swapData || isCreating}
+                  >
+                    {!isCreating && <LockClosedIcon className="w-6 h-6" />}
+                    {isCreating ? "Creating Swap..." : "Create Swap"}
+                  </button>
                 </div>
               </div>
             </div>

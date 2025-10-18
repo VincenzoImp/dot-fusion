@@ -14,6 +14,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   EyeIcon,
+  KeyIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
@@ -61,6 +62,10 @@ const FastSwapPage: NextPage = () => {
   const [swapCreated, setSwapCreated] = useState(false);
   const [swapId, setSwapId] = useState<string>("");
   const [secret, setSecret] = useState<string>("");
+
+  // Secret input state
+  const [customSecret, setCustomSecret] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Transaction tracking
   const [transactions, setTransactions] = useState<SwapTransaction[]>([]);
@@ -147,17 +152,50 @@ const FastSwapPage: NextPage = () => {
   };
 
   /**
-   * Generate secret
+   * Generate random secret
    */
-  const generateSecret = () => {
-    const randomBytes = new Uint8Array(32);
-    crypto.getRandomValues(randomBytes);
-    const secretHex = `0x${Array.from(randomBytes)
-      .map(b => b.toString(16).padStart(2, "0"))
-      .join("")}`;
+  const generateRandomSecret = () => {
+    setIsGenerating(true);
+    try {
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      const secretHex = `0x${Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("")}`;
 
-    const hash = keccak256(encodePacked(["bytes32"], [secretHex as `0x${string}`]));
-    return { secret: secretHex, secretHash: hash };
+      setCustomSecret(secretHex);
+      notification.success("🔐 Random secret generated securely!");
+    } catch (error) {
+      console.error("Error generating secret:", error);
+      notification.error("Failed to generate secret");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Process secret and create swap
+   */
+  const processSecretAndCreate = () => {
+    if (!customSecret) {
+      notification.error("Please enter or generate a secret");
+      return;
+    }
+
+    try {
+      // Validate secret format (should be 0x + 64 hex characters)
+      if (!/^0x[a-fA-F0-9]{64}$/.test(customSecret)) {
+        notification.error("Secret must be 64 hex characters (0x + 64 chars)");
+        return;
+      }
+
+      // Use the custom secret for swap creation
+      setSecret(customSecret);
+      createSwapWithSecret(customSecret);
+    } catch (error) {
+      console.error("Error processing secret:", error);
+      notification.error("Failed to process secret");
+    }
   };
 
   /**
@@ -176,9 +214,9 @@ const FastSwapPage: NextPage = () => {
   };
 
   /**
-   * Create swap
+   * Create swap with provided secret
    */
-  const createSwap = async () => {
+  const createSwapWithSecret = async (providedSecret: string) => {
     if (!isConnected || !connectedAddress) {
       notification.error("Please connect your wallet");
       return;
@@ -200,20 +238,19 @@ const FastSwapPage: NextPage = () => {
       return;
     }
 
-    // Generate secret and swap ID
-    const { secret: generatedSecret, secretHash: generatedHash } = generateSecret();
+    // Generate secret hash and swap ID
+    const secretHash = keccak256(encodePacked(["bytes32"], [providedSecret as `0x${string}`]));
     const timestamp = Date.now();
     const id = keccak256(toHex(`swap_${connectedAddress}_${timestamp}`));
 
-    setSecret(generatedSecret);
     setSwapId(id);
     setIsCreating(true);
 
     // Create swap tracking data
     const swapTracking = createSwapTracking({
       swapId: id,
-      secretHash: generatedHash,
-      secret: generatedSecret,
+      secretHash: secretHash,
+      secret: providedSecret,
       direction,
       userAddress: connectedAddress,
       destinationAddress,
@@ -234,7 +271,7 @@ const FastSwapPage: NextPage = () => {
           functionName: "createSwap",
           args: [
             id as `0x${string}`,
-            generatedHash as `0x${string}`,
+            secretHash as `0x${string}`,
             RESOLVER_ADDRESS as `0x${string}`,
             parseEther(sendAmount),
             parseEther(receiveAmount),
@@ -266,7 +303,7 @@ const FastSwapPage: NextPage = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               swapId: id,
-              secretHash: generatedHash,
+              secretHash: secretHash,
               maker: connectedAddress,
               ethAmount: sendAmount,
               dotAmount: receiveAmount,
@@ -306,7 +343,7 @@ const FastSwapPage: NextPage = () => {
           functionName: "createNativeSwap",
           args: [
             id as `0x${string}`,
-            generatedHash as `0x${string}`,
+            secretHash as `0x${string}`,
             destinationAddress as `0x${string}`,
             BigInt(timelockSeconds),
           ],
@@ -334,7 +371,7 @@ const FastSwapPage: NextPage = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               swapId: id,
-              secretHash: generatedHash,
+              secretHash: secretHash,
               taker: connectedAddress,
               dotAmount: sendAmount,
             }),
@@ -386,6 +423,7 @@ const FastSwapPage: NextPage = () => {
     setSwapCreated(false);
     setSwapId("");
     setSecret("");
+    setCustomSecret("");
     setTransactions([]);
   };
 
@@ -526,7 +564,7 @@ const FastSwapPage: NextPage = () => {
                 )}
 
                 {/* Destination Address */}
-                <div className="form-control mb-8">
+                <div className="form-control mb-6">
                   <label className="label">
                     <span className="label-text font-bold text-lg flex items-center gap-2">
                       <span className="badge badge-sm badge-secondary">
@@ -542,17 +580,79 @@ const FastSwapPage: NextPage = () => {
                   />
                 </div>
 
+                {/* Secret Configuration */}
+                <div className="mb-8 p-6 bg-gradient-to-br from-primary/10 via-base-300/50 to-secondary/10 rounded-2xl border-2 border-primary/20 shadow-lg">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-primary/20 rounded-full">
+                      <KeyIcon className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl">Secret Configuration</h3>
+                      <p className="text-sm opacity-70">Generate or enter your swap secret</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-bold flex items-center gap-2">
+                          <span className="badge badge-sm badge-primary">Required</span>
+                          Secret (64 hex characters)
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered font-mono text-sm bg-base-100 focus:border-primary focus:outline-primary"
+                        placeholder="0x..."
+                        value={customSecret}
+                        onChange={(e) => setCustomSecret(e.target.value)}
+                      />
+                      <label className="label">
+                        <span className="label-text-alt opacity-70 flex items-center gap-1">
+                          <ExclamationTriangleIcon className="w-3 h-3" />
+                          Enter your own secret or generate a random one below
+                        </span>
+                      </label>
+                    </div>
+
+                    <button
+                      className={`btn btn-outline btn-primary w-full ${isGenerating ? "loading" : ""}`}
+                      onClick={generateRandomSecret}
+                      disabled={isGenerating}
+                    >
+                      {!isGenerating && <KeyIcon className="w-5 h-5" />}
+                      {isGenerating ? "Generating Secure Random Secret..." : "Generate Random Secret"}
+                    </button>
+
+                    {customSecret && (
+                      <div className="alert alert-success shadow-md">
+                        <CheckCircleIcon className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Secret ready! You can now create the swap.</span>
+                      </div>
+                    )}
+
+                    <div className="alert alert-warning shadow-md">
+                      <ExclamationTriangleIcon className="w-5 h-5" />
+                      <div>
+                        <p className="font-bold text-sm">Keep Your Secret Safe!</p>
+                        <p className="text-xs opacity-90">
+                          Your secret is only known to you. Keep it private until you complete the swap.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Create Button */}
                 <button
-                  className={`btn btn-lg w-full shadow-xl ${
-                    isCreating
-                      ? "btn-disabled loading"
-                      : !destinationAddress || !sendAmount || !resolverStatus?.online
-                        ? "btn-disabled"
-                        : "btn-primary"
-                  } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
-                  onClick={createSwap}
-                  disabled={isCreating || !destinationAddress || !sendAmount || !resolverStatus?.online}
+                  className={`btn btn-lg w-full shadow-xl ${isCreating
+                    ? "btn-disabled loading"
+                    : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
+                      ? "btn-disabled"
+                      : "btn-primary"
+                    } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
+                  onClick={processSecretAndCreate}
+                  disabled={isCreating || !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online}
                 >
                   {isCreating ? (
                     <span className="flex items-center gap-2">
