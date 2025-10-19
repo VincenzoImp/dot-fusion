@@ -131,7 +131,7 @@ const DashboardPage: NextPage = () => {
             </h2>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link href="/swap" className="btn btn-primary btn-lg">
+              <Link href="/swap-simple" className="btn btn-primary btn-lg">
                 <PlusCircleIcon className="w-6 h-6" />
                 Create Swap
               </Link>

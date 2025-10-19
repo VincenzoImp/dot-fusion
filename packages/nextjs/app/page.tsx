@@ -37,10 +37,7 @@ const HomePage: NextPage = () => {
                 <>
                   <Link href="/swap-simple" className="btn btn-primary btn-lg">
                     <BoltIcon className="w-6 h-6" />
-                    Fast Swap
-                  </Link>
-                  <Link href="/swap" className="btn btn-outline btn-lg">
-                    Advanced Swap
+                    Start Swapping
                   </Link>
                   <Link href="/swaps" className="btn btn-outline btn-lg">
                     <EyeIcon className="w-6 h-6" />
