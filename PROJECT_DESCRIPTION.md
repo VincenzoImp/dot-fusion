@@ -1,0 +1,3 @@
+# DotFusion - Cross-Chain Atomic Swap Platform
+
+DotFusion enables trustless ETH↔DOT swaps between Ethereum and Polkadot using Hash Time-Locked Contracts (HTLC). Users exchange assets without intermediaries through atomic guarantees—both chains complete or both revert. The platform leverages Polkadot's XCM Precompile for automatic cross-chain secret propagation, demonstrating unique Polkadot VM capabilities. Built on Scaffold-ETH 2 with production-ready security (ReentrancyGuard, CEI pattern), deployed on Sepolia and Paseo Asset Hub testnets. Features include instant swaps via resolver service, real-time dashboard, and comprehensive swap management. Fixed rate: 1 ETH = 100,000 DOT. Showcases practical blockchain interoperability and decentralized bridge alternatives.
