@@ -260,6 +260,9 @@ const FastSwapPage: NextPage = () => {
       resolverAddress: RESOLVER_ADDRESS,
     });
 
+    // Save to tracking BEFORE adding transactions (so the swap exists in storage)
+    saveTrackedSwap(swapTracking);
+
     try {
       if (direction === "ETH_TO_DOT") {
         // User sends ETH, receives DOT
@@ -298,6 +301,10 @@ const FastSwapPage: NextPage = () => {
         notification.info("🔄 Step 2/3: Waiting for resolver to match...");
 
         try {
+          // Create an AbortController with 1 minute timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds (1 minute)
+
           const response = await fetch("http://localhost:3001/fulfill-eth-to-dot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -308,7 +315,10 @@ const FastSwapPage: NextPage = () => {
               ethAmount: sendAmount,
               dotAmount: receiveAmount,
             }),
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const data = await response.json();
@@ -366,6 +376,10 @@ const FastSwapPage: NextPage = () => {
         notification.info("🔄 Step 2/3: Waiting for resolver to match...");
 
         try {
+          // Create an AbortController with 1 minute timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds (1 minute)
+
           const response = await fetch("http://localhost:3001/fulfill-dot-to-eth", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -375,7 +389,10 @@ const FastSwapPage: NextPage = () => {
               taker: connectedAddress,
               dotAmount: sendAmount,
             }),
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const data = await response.json();
@@ -402,8 +419,7 @@ const FastSwapPage: NextPage = () => {
         }
       }
 
-      // Save to tracking
-      saveTrackedSwap(swapTracking);
+      // Swap tracking was already saved before transactions, just mark as created
       setSwapCreated(true);
     } catch (error: any) {
       console.error("Error creating swap:", error);
@@ -645,12 +661,13 @@ const FastSwapPage: NextPage = () => {
 
                 {/* Create Button */}
                 <button
-                  className={`btn btn-lg w-full shadow-xl ${isCreating
-                    ? "btn-disabled loading"
-                    : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
-                      ? "btn-disabled"
-                      : "btn-primary"
-                    } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
+                  className={`btn btn-lg w-full shadow-xl ${
+                    isCreating
+                      ? "btn-disabled loading"
+                      : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
+                        ? "btn-disabled"
+                        : "btn-primary"
+                  } bg-gradient-to-r from-primary to-secondary border-none text-primary-content hover:scale-[1.02] transition-transform`}
                   onClick={processSecretAndCreate}
                   disabled={
                     isCreating || !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
