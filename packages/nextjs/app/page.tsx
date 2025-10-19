@@ -6,68 +6,16 @@ import { useAccount } from "wagmi";
 import {
   ArrowRightIcon,
   BoltIcon,
-  ChartBarIcon,
   ClockIcon,
   CurrencyDollarIcon,
   EyeIcon,
   GlobeAltIcon,
-  PlusCircleIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
-import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth";
 
 const HomePage: NextPage = () => {
-  const { address: connectedAddress, isConnected } = useAccount();
-
-  // Fetch swap statistics from both networks
-  const { data: ethSwapCreatedEvents } = useScaffoldEventHistory({
-    contractName: "DotFusionEthereumEscrow",
-    eventName: "SwapCreated",
-    fromBlock: 0n,
-    watch: true,
-    filters: {},
-    chainId: 11155111, // Sepolia
-  });
-
-  const { data: dotSwapCreatedEvents } = useScaffoldEventHistory({
-    contractName: "DotFusionPolkadotEscrow",
-    eventName: "SwapCreated",
-    fromBlock: 0n,
-    watch: true,
-    filters: {},
-    chainId: 420420422, // Paseo
-  });
-
-  const { data: ethSwapCompletedEvents } = useScaffoldEventHistory({
-    contractName: "DotFusionEthereumEscrow",
-    eventName: "SwapCompleted",
-    fromBlock: 0n,
-    watch: true,
-    filters: {},
-    chainId: 11155111, // Sepolia
-  });
-
-  const { data: dotSwapCompletedEvents } = useScaffoldEventHistory({
-    contractName: "DotFusionPolkadotEscrow",
-    eventName: "SwapCompleted",
-    fromBlock: 0n,
-    watch: true,
-    filters: {},
-    chainId: 420420422, // Paseo
-  });
-
-  // Calculate statistics
-  const totalSwaps = (ethSwapCreatedEvents?.length || 0) + (dotSwapCreatedEvents?.length || 0);
-  const completedSwaps = (ethSwapCompletedEvents?.length || 0) + (dotSwapCompletedEvents?.length || 0);
-  const userSwaps =
-    totalSwaps > 0 && connectedAddress
-      ? [...(ethSwapCreatedEvents || []), ...(dotSwapCreatedEvents || [])].filter(
-          (event: any) =>
-            event.args.maker.toLowerCase() === connectedAddress.toLowerCase() ||
-            event.args.taker.toLowerCase() === connectedAddress.toLowerCase(),
-        ).length
-      : 0;
+  const { isConnected } = useAccount();
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -109,43 +57,6 @@ const HomePage: NextPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Statistics Cards - Only show when connected */}
-      {isConnected && (
-        <div className="py-8 px-4 bg-base-200">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-6">Platform Statistics</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body text-center">
-                  <ChartBarIcon className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <h3 className="card-title justify-center">Total Swaps</h3>
-                  <div className="text-3xl font-bold">{totalSwaps}</div>
-                  <p className="opacity-70">All time</p>
-                </div>
-              </div>
-
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body text-center">
-                  <EyeIcon className="w-12 h-12 text-success mx-auto mb-4" />
-                  <h3 className="card-title justify-center">Completed</h3>
-                  <div className="text-3xl font-bold">{completedSwaps}</div>
-                  <p className="opacity-70">Successful swaps</p>
-                </div>
-              </div>
-
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body text-center">
-                  <PlusCircleIcon className="w-12 h-12 text-secondary mx-auto mb-4" />
-                  <h3 className="card-title justify-center">Your Swaps</h3>
-                  <div className="text-3xl font-bold">{userSwaps}</div>
-                  <p className="opacity-70">Created or participated</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Features Section */}
       <div className="py-16 px-4">

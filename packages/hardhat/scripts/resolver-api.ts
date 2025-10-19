@@ -47,8 +47,8 @@ const CONFIG = {
   // Paseo RPC - use the same endpoint as hardhat config
   PASEO_RPC: process.env.PASEO_RPC || "https://testnet-passet-hub-eth-rpc.polkadot.io",
 
-  SEPOLIA_ESCROW: "0x4cFC4fb3FF50D344E749a256992CB019De9f2229",
-  PASEO_ESCROW: "0xc84E1a9A1772251CA228F34d0af5040B94C7083c",
+  SEPOLIA_ESCROW: "0xC8FE57b90fE5F31b8d3A4b9bC880354Ba00Ed78F", // EthereumEscrow on Sepolia
+  PASEO_ESCROW: "0xc84E1a9A1772251CA228F34d0af5040B94C7083c", // PolkadotEscrow on Paseo
 };
 
 // Helper to create provider with static network (skips detection)
@@ -270,18 +270,51 @@ app.post("/fulfill-dot-to-eth", async (req, res) => {
     const wallet = new ethers.Wallet(CONFIG.RESOLVER_PRIVATE_KEY, provider);
     const escrow = new ethers.Contract(CONFIG.SEPOLIA_ESCROW, ESCROW_ABI, wallet) as any;
 
+    // Parse amounts to wei
+    const ethAmountWei = ethers.parseEther(ethAmount);
+    const dotAmountWei = ethers.parseEther(dotAmount);
+
+    console.log(`📋 Transaction parameters:`);
+    console.log(`  - ETH Amount: ${ethAmount} (${ethAmountWei.toString()} wei)`);
+    console.log(`  - DOT Amount: ${dotAmount} (${dotAmountWei.toString()} wei)`);
+
+    // Check resolver balance on Sepolia
+    const resolverBalance = await provider.getBalance(CONFIG.RESOLVER_ADDRESS);
+    console.log(`💰 Resolver balance on Sepolia: ${ethers.formatEther(resolverBalance)} ETH`);
+
+    if (resolverBalance < ethAmountWei) {
+      const errorMsg = `Insufficient balance! Need ${ethAmount} ETH but only have ${ethers.formatEther(resolverBalance)} ETH`;
+      console.error(`❌ ${errorMsg}`);
+      return res.status(400).json({ error: errorMsg });
+    }
+
+    // Check if swap already exists on Sepolia
+    const existingSwap = await escrow.getSwap(swapId);
+    const swapState = Number(existingSwap.state);
+    console.log(`🔍 Checking swap existence on Sepolia: state=${swapState}`);
+
+    if (swapState !== 0) {
+      console.log(`⚠️ Swap already exists on Sepolia with state: ${swapState}`);
+      return res.status(400).json({
+        error: "Swap already exists on Ethereum",
+        swapId: swapId,
+        currentState: swapState,
+      });
+    }
+    console.log("✅ Swap does not exist on Sepolia (state=0), proceeding...");
+
     // Create swap on Sepolia
     // Note: ethers.js v6 handles BigInt natively, no need to explicitly convert
     const tx = await escrow.createSwap(
       swapId,
       secretHash,
       taker,
-      ethers.parseEther(ethAmount),
-      ethers.parseEther(dotAmount),
-      CONFIG.EXCHANGE_RATE * 1e18, // Pass as number, ethers will convert
+      ethAmountWei,
+      dotAmountWei,
+      BigInt(CONFIG.EXCHANGE_RATE) * BigInt(1e18), // Exchange rate with 18 decimals (matches frontend)
       CONFIG.ETH_TIMELOCK, // Pass as number, ethers will convert
       addressToBytes32(CONFIG.RESOLVER_ADDRESS),
-      { value: ethers.parseEther(ethAmount) },
+      { value: ethAmountWei },
     );
 
     console.log(`✅ Transaction sent: ${tx.hash}`);
