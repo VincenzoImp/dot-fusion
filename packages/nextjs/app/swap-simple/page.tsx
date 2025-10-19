@@ -663,7 +663,7 @@ const FastSwapPage: NextPage = () => {
                 <button
                   className={`btn btn-lg w-full shadow-xl ${
                     isCreating
-                      ? "btn-disabled loading"
+                      ? "btn-disabled"
                       : !destinationAddress || !sendAmount || !customSecret || !resolverStatus?.online
                         ? "btn-disabled"
                         : "btn-primary"
@@ -675,18 +675,18 @@ const FastSwapPage: NextPage = () => {
                 >
                   {isCreating ? (
                     <span className="flex items-center gap-2">
-                      <span className="loading loading-spinner"></span>
-                      Creating Swap...
+                      <span className="loading loading-spinner loading-md"></span>
+                      <span>Creating Swap...</span>
                     </span>
                   ) : !resolverStatus?.online ? (
                     <span className="flex items-center gap-2">
                       <ExclamationTriangleIcon className="w-6 h-6" />
-                      Resolver Offline
+                      <span>Resolver Offline</span>
                     </span>
                   ) : (
                     <span className="flex items-center gap-2 text-lg font-bold">
                       <BoltIcon className="w-6 h-6" />
-                      Fast Swap {direction === "ETH_TO_DOT" ? "ETH → DOT" : "DOT → ETH"}
+                      <span>Fast Swap {direction === "ETH_TO_DOT" ? "ETH → DOT" : "DOT → ETH"}</span>
                     </span>
                   )}
                 </button>
